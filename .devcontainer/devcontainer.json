@@ -1,23 +1,23 @@
 // .devcontainer/devcontainer.json
 {
-  "name": "NearYou Dev Container",  
-  "dockerComposeFile": [
-    "docker-compose.yml"
-  ],
+  "name": "NearYou Dev Container", 
+  "dockerComposeFile": "docker-compose.yml", //file per avviare i container
+  "service": "app", //host di Vs Code
+  "workspaceFolder": "/workspace", //cartelle di lavoro all'interno del container
+
+  //uso porte per tecnologie
+  // 8081 per Nifi (documentazione usa 8080, 8081)
+  //1883 HiveMQ MQTT , per la connessione usa questa porta, interfaccia web su 8080
+  //9092 Kafla, usa listener di default sulla 9092 in conf PLAINTEXT
+  //8080 per UI HiveMQ
   
-  "service": "app",
-  // Dove si troverà la cartella di lavoro
-  "workspaceFolder": "/workspace",
-
-  "forwardPorts": [],
-  "postCreateCommand": "pip install -r requirements.txt || true",
-
+  "forwardPorts":[8081,1883,9092,8080],
+  
+  // possibilità di usare docker e docker-compose, dentro il container "app"
   "features": {
-    "docker-in-docker": "latest"
-    
-    // https://github.com/devcontainers/features
+    "docker-in-docker":"latest"      
   },
-
-  // Utente di default
-  "remoteUser": "vscode"
+  //installo le dipendeze python da file 
+  "postCreateCommand": "pip install -r requirements.txt || true",
+  "remoteUser": "vscode" //utente di default per i comandi nel container
 }
