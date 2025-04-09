@@ -25,16 +25,27 @@ app:
       -"2181:2181"
   ###########################################################
 
-  #Kafka: broker per messagistica/streaming, invia e ricevo su porta 9092
+  #Kafka: broker per messagistica/streaming, invia e ricevo su porta 9093 visto ssl (9092 per PLAINTEXT no critt)
   kafka:
-    image:bitami/kafka:latest
+    image: bitnami/kafka:latest
+    volumes:
+      - ./certs:/certs
     environment:
-      - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - ALLOW_PLAINTEXT_LISTENER=yes #porta non cittografata
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - ALLOW_PLAINTEXT_LISTENER=no
+      - KAFKA_CFG_LISTENERS=SSL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=SSL://kafka:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=SSL:SSL
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=SSL
+      - KAFKA_CFG_SSL_KEYSTORE_LOCATION=/certs/kafka.keystore.jks
+      - KAFKA_CFG_SSL_KEYSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
+      - KAFKA_CFG_SSL_KEY_PASSWORD=${KAFKA_KEYSTORE_PASS}
+      - KAFKA_CFG_SSL_TRUSTSTORE_LOCATION=/certs/kafka.truststore.jks
+      - KAFKA_CFG_SSL_TRUSTSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
     ports:
-      - "9092:9092"
+      - "9093:9093"
     depends_on:
       - zookeeper
     ###########################################################
