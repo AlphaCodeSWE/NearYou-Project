@@ -1,15 +1,15 @@
 version: "3.9"
 
 services:
-  # Servizio app: utilizza Python 3.10 slim per eseguire le applicazioni Python
+  # Servizio per il terminale VS Code (host principale)
   app:
     image: python:3.10-slim
     volumes:
-      - .:/workspace:cached
+      - ..:/workspace:cached
     command: sleep infinity
     privileged: true
 
-  # Servizio Zookeeper: coordina i broker Kafka, obbligatorio per Kafka
+  # Zookeeper: coordinatore per Kafka
   zookeeper:
     image: bitnami/zookeeper:latest
     environment:
@@ -17,11 +17,13 @@ services:
     ports:
       - "2181:2181"
 
-  # Servizio Kafka: broker per la messaggistica e lo streaming, porta 9093 per SSL
+  # Kafka: broker per la messaggistica e lo streaming in modalità SSL su porta 9093
   kafka:
     image: bitnami/kafka:latest
     volumes:
-      - ./certs:/certs
+      - ../certs:/certs
+    env_file:
+      - ../.env
     environment:
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=no
@@ -41,14 +43,14 @@ services:
     depends_on:
       - zookeeper
 
-  # Servizio HiveMQ: broker MQTT, porta 1883 standard MQTT, porta 8080 per l'UI
+  # HiveMQ: Broker MQTT, con interfaccia web su 8080 e porta MQTT 1883
   hivemq:
     image: hivemq/hivemq-ce:latest
     ports:
       - "1883:1883"
       - "8080:8080"
 
-  # Servizio Apache NiFi: orchestratore di flussi di dati, porta 8081 per l'interfaccia web
+  # Apache NiFi: per il dataflow e l'orchestrazione dei flussi, interfaccia web su 8081
   nifi:
     image: apache/nifi:latest
     environment:
