@@ -8,10 +8,10 @@
   //uso porte per tecnologie
   // 8081 per Nifi (documentazione usa 8080, 8081)
   //1883 HiveMQ MQTT , per la connessione usa questa porta, interfaccia web su 8080
-  //9092 Kafla, usa listener di default sulla 9092 in conf PLAINTEXT
+  //9093 Kafla, usa listener di default sulla 9092 in conf PLAINTEXT, 9093 con SSL
   //8080 per UI HiveMQ
   
-  "forwardPorts":[8081,1883,9092,8080],
+  "forwardPorts":[8081,1883,9093,8080],
   
   // possibilità di usare docker e docker-compose, dentro il container "app"
   "features": {
