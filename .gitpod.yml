@@ -1,10 +1,18 @@
+image: gitpod/workspace-full
+
 tasks:
-  - name: "Avvio ambiente Docker"
+  - name: "Carica .env e avvia ambiente Docker"
     command: |
+      # Se il file .env esiste, leggilo per caricare le variabili d'ambiente (es. KAFKA_KEYSTORE_PASS)
+      if [ -f .env ]; then
+        export $(grep -v '^#' .env | xargs)
+      fi
+
+      # Avvia i container definiti in .devcontainer/docker-compose.yml
       docker-compose -f .devcontainer/docker-compose.yml up -d
 
-# Forward automatico delle porte
 ports:
+  # Porte forwardate automaticamente
   - port: 9093
     onOpen: open-preview
   - port: 2181
