@@ -1,0 +1,23 @@
+// .devcontainer/devcontainer.json
+{
+  "name": "NearYou Dev Container",  
+  "dockerComposeFile": [
+    "docker-compose.yml"
+  ],
+  
+  "service": "app",
+  // Dove si troverà la cartella di lavoro
+  "workspaceFolder": "/workspace",
+
+  "forwardPorts": [],
+  "postCreateCommand": "pip install -r requirements.txt || true",
+
+  "features": {
+    "docker-in-docker": "latest"
+    
+    // https://github.com/devcontainers/features
+  },
+
+  // Utente di default
+  "remoteUser": "vscode"
+}
