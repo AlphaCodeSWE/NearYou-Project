@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-  # Container per l'ambiente principale (host "app")
+  # Container per l'ambiente principale (app)
   app:
     image: python:3.10-slim
     volumes:
@@ -17,15 +17,15 @@ services:
     ports:
       - "2181:2181"
 
-  # Kafka: broker per la messaggistica in SSL (porta 9093)
+  # Kafka: broker per la messaggistica in SSL
   kafka:
     image: bitnami/kafka:latest
-    # Carica le variabili dal file .env (che deve trovarsi in .devcontainer/ oppure usare il percorso relativo opportuno)
+  
     env_file:
       - .env
     volumes:
-      - ../certs:/bitnami/kafka/config/certs   # Certificati per SSL
-      - kafka_data:/bitnami/kafka               # Volume persistente per lo storage di Kafka
+      - ../certs:/bitnami/kafka/config/certs   # Percorso dei certificati per SSL
+      - kafka_data:/bitnami/kafka               # Volume persistente per mantenere lo storage
     environment:
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=no
@@ -42,21 +42,21 @@ services:
       - KAFKA_CFG_SSL_TRUSTSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
       - KAFKA_BROKER_ID=1
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
-      # Imposta un Cluster ID fisso (utile per evitare warning e garantire la persistenza dello stato)
+      # Imposta un Cluster ID fisso per evitare il problema della riformattazione continua
       - KAFKA_CLUSTER_ID=myClusterId
     ports:
       - "9093:9093"
     depends_on:
       - zookeeper
 
-  # HiveMQ: broker per MQTT
+  # HiveMQ: broker MQTT
   hivemq:
     image: hivemq/hivemq-ce:latest
     ports:
       - "1883:1883"
       - "8080:8080"
 
-  # Apache NiFi: strumento di gestione flussi dati
+  # Apache NiFi: gestione dei flussi dati
   nifi:
     image: apache/nifi:latest
     environment:
