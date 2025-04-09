@@ -1,31 +1,23 @@
-# uso l'ultima versione, in caso di problemi uso la 3.8
-version: "3.9" 
-services:
+version: "3.9"
 
-#qui eseguo VS code che non è altro cge il server CodeSpaces,
-# installo python, posso fare docker-compose logs, lanciare script..
-app:
-  image: python:3.10-slim   
-  
-  #l'host è la VM che Github CodeSpaces crea, dentro il container in /workspace
-  volumes:
-    -..:/workspace:cached
-    
-  #per far rimanere il container sempre in esecuzione:
-  command: sleep infinity
-  privileged: true
-  
-  ##########################################################
-  #Zookeeper per Kafla : in quanto coordina i broker, obbligatorio l'uso
+services:
+  # Servizio app: utilizza Python 3.10 slim per eseguire le applicazioni Python
+  app:
+    image: python:3.10-slim
+    volumes:
+      - .:/workspace:cached
+    command: sleep infinity
+    privileged: true
+
+  # Servizio Zookeeper: coordina i broker Kafka, obbligatorio per Kafka
   zookeeper:
-    image: bitami/zookeeper:latest 
+    image: bitnami/zookeeper:latest
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
     ports:
-      -"2181:2181"
-  ###########################################################
+      - "2181:2181"
 
-  #Kafka: broker per messagistica/streaming, invia e ricevo su porta 9093 visto ssl (9092 per PLAINTEXT no critt)
+  # Servizio Kafka: broker per la messaggistica e lo streaming, porta 9093 per SSL
   kafka:
     image: bitnami/kafka:latest
     volumes:
@@ -48,29 +40,18 @@ app:
       - "9093:9093"
     depends_on:
       - zookeeper
-    ###########################################################
 
-    #HIVEMQ:
-    hivemq:
+  # Servizio HiveMQ: broker MQTT, porta 1883 standard MQTT, porta 8080 per l'UI
+  hivemq:
     image: hivemq/hivemq-ce:latest
-    container_name:hivemq
     ports:
-      -"1883:1883" # porta mqtt standard
-      -"8080:8080" # per Ui (in caso di adozione)
-    #############################################################
-    
-    #APACHE Nifi: dataflow, orchesto le pipeline,
-    #prendo i mex da hiveMQ, trasformo pubblici du kafla o contrario
-    nifi:
+      - "1883:1883"
+      - "8080:8080"
+
+  # Servizio Apache NiFi: orchestratore di flussi di dati, porta 8081 per l'interfaccia web
+  nifi:
     image: apache/nifi:latest
     environment:
       - NIFI_WEB_HTTP_PORT=8081
     ports:
       - "8081:8081"
-    
-      
-      
-  
-  
-  
-  
