@@ -5,21 +5,24 @@ set -x
 # Controlla se keytool è disponibile
 if ! command -v keytool &> /dev/null; then
     echo "Errore: keytool non è disponibile nel PATH."
-    echo "Installa il Java Development Kit (JDK) "
+    echo "Installa il Java Development Kit (JDK) e aggiungi il percorso della directory bin al PATH."
     exit 1
 fi
 
-# Ottieni la password dalla variabile d'ambiente o falla generare casualmente
+# Recupera la password dalla variabile STORE_PASS (se non definita, la genero casualmente)
 STORE_PASS="${STORE_PASS:-$(openssl rand -base64 16)}"
-VALID_DAYS=730  # Durata dei certificati in gg
+VALID_DAYS=730  # Validità in gg
 
-echo "Uso password per keystore/truststore: (non verrà mostrata in chiaro)"
+echo "Uso password per keystore/truststore: "
+sleep 1
 
 echo "==== 1) Creazione della chiave privata e certificato CA self-signed ===="
 openssl genrsa -out ca.key 2048
 openssl req -x509 -new -key ca.key -sha256 -days $VALID_DAYS \
   -out ca.crt \
-  -subj "/CN=My-Local-CA"
+  -subj '//C=IT/ST=State/L=City/O=MyOrg/OU=Prod/CN=My-Local-CA'
+
+
 
 echo "==== 2) Creazione del keystore (kafka.keystore.jks) ===="
 keytool -genkey -noprompt \
