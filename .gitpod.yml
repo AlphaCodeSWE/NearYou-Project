@@ -1,0 +1,22 @@
+# Usa DevContainer se presente
+github:
+  prebuilds:
+    enabled: true
+
+tasks:
+  - name: "Avvio ambiente Docker"
+    command: |
+      docker-compose -f .devcontainer/docker-compose.yml up -d
+
+# Forward automatico delle porte
+ports:
+  - port: 9093
+    onOpen: open-preview
+  - port: 2181
+    onOpen: ignore
+  - port: 8080
+    onOpen: open-preview
+  - port: 8081
+    onOpen: open-preview
+  - port: 1883
+    onOpen: ignore
