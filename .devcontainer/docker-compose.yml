@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-  # Servizio "app" per VS Code/terminal nel container
+  # Container per l'ambiente principale (host "app")
   app:
     image: python:3.10-slim
     volumes:
@@ -11,23 +11,19 @@ services:
 
   # Zookeeper: coordinatore per Kafka
   zookeeper:
-    image: bitnami/zookeeper:latest 
+    image: bitnami/zookeeper:latest
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
     ports:
       - "2181:2181"
 
-  # Kafka: broker configurato per SSL sulla porta 9093
+  # Kafka: broker per la messaggistica in SSL (porta 9093)
   kafka:
     image: bitnami/kafka:latest
     volumes:
-      # Monta la cartella "certs" dalla radice in /bitnami/kafka/config/certs all'interno del container,
-      # così i file kafka.keystore.jks e kafka.truststore.jks saranno disponibili nella posizione corretta
       - ../certs:/bitnami/kafka/config/certs
     env_file:
-      # Carica il file .env dalla radice, in modo che il container possa leggere KAFKA_KEYSTORE_PASS    
       - /workspace/NearYou-Project/.env
-
     environment:
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=no
@@ -35,11 +31,8 @@ services:
       - KAFKA_CFG_ADVERTISED_LISTENERS=SSL://kafka:9093
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=SSL:SSL
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=SSL
-      # Imposta il ruolo del processo per Kafka: in questo caso, "broker" (modo Zookeeper)
       - KAFKA_CFG_PROCESS_ROLES=broker
-      # Imposta l'identificativo unico del nodo, necessario in modalità KRaft (anche se usi ZooKeeper, Bitnami richiede questo parametro)
       - KAFKA_CFG_NODE_ID=1
-      # Percorsi dei certificati: ora montati nella directory richiesta /bitnami/kafka/config/certs
       - KAFKA_CFG_SSL_KEYSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.keystore.jks
       - KAFKA_CFG_SSL_KEYSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
       - KAFKA_CFG_SSL_KEY_PASSWORD=${KAFKA_KEYSTORE_PASS}
@@ -52,14 +45,13 @@ services:
     depends_on:
       - zookeeper
 
-  # HiveMQ: broker MQTT con UI su porta 8080 e porta MQTT 1883
+  # HiveMQ e NiFi: le altre definizioni rimangono invariate...
   hivemq:
     image: hivemq/hivemq-ce:latest
     ports:
       - "1883:1883"
       - "8080:8080"
 
-  # Apache NiFi: per orchestrare i flussi di dati, interfaccia web su porta 8081
   nifi:
     image: apache/nifi:latest
     environment:
