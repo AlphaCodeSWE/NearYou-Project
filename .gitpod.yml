@@ -1,7 +1,7 @@
 image: gitpod/workspace-full
 
 tasks:
-  - name: "Load .env and start Docker environment"
+  - name: "Load .env and start Docker"
     command: |
       if [ -f .env ]; then
         export $(grep -v '^#' .env | xargs)
