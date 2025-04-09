@@ -1,28 +1,27 @@
 #!/bin/bash
-#
-# Script per generare keystore e truststore per Kafka con CA self-signed
-#
-# Esempio d'uso:
-#   export STORE_PASS="UnaPasswordSicura_123"
-#   ./generate_kafka_ssl.sh
-#
-# se non impostato: STORE_PASS, lo script ne genera una a caso.
+set -e
+set -x
 
-# Se la variabile non esiste, ne generiamo una casuale, se voglio usare in fase di test : STORE_PASS=changeIT
+# Controlla se keytool è disponibile
+if ! command -v keytool &> /dev/null; then
+    echo "Errore: keytool non è disponibile nel PATH."
+    echo "Installa il Java Development Kit (JDK) "
+    exit 1
+fi
+
+# Ottieni la password dalla variabile d'ambiente o falla generare casualmente
 STORE_PASS="${STORE_PASS:-$(openssl rand -base64 16)}"
-VALID_DAYS=730  # Durata certificati in giorni 
+VALID_DAYS=730  # Durata dei certificati in gg
 
-echo "Utilizzo password keystore/truststore: $STORE_PASS"
-echo "(Puoi sovrascriverla impostando STORE_PASS prima di lanciare lo script)."
-sleep 2
+echo "Uso password per keystore/truststore: (non verrà mostrata in chiaro)"
 
-echo "==== 1) Creazione chiave privata e certificato CA self-signed ===="
+echo "==== 1) Creazione della chiave privata e certificato CA self-signed ===="
 openssl genrsa -out ca.key 2048
 openssl req -x509 -new -key ca.key -sha256 -days $VALID_DAYS \
   -out ca.crt \
   -subj "/CN=My-Local-CA"
 
-echo "==== 2) Creazione e configurazione del keystore (broker) ===="
+echo "==== 2) Creazione del keystore (kafka.keystore.jks) ===="
 keytool -genkey -noprompt \
   -alias kafka-ssl \
   -dname "CN=kafka, OU=Prod, O=MyOrg, L=City, ST=State, C=IT" \
@@ -32,18 +31,17 @@ keytool -genkey -noprompt \
   -keyalg RSA \
   -validity $VALID_DAYS
 
-echo "==== 3) Creazione CSR per il broker (kafka.csr) ===="
+echo "==== 3) Generazione della CSR (kafka.csr) ===="
 keytool -certreq -alias kafka-ssl \
   -keystore kafka.keystore.jks \
   -storepass "$STORE_PASS" \
   -file kafka.csr
 
-echo "==== 4) Firma della CSR con la CA, creando kafka.crt ===="
-openssl x509 -req -sha256 -in kafka.csr \
-  -CA ca.crt -CAkey ca.key -CAcreateserial \
-  -out kafka.crt -days $VALID_DAYS
+echo "==== 4) Firma della CSR con la CA per creare kafka.crt ===="
+openssl x509 -req -sha256 -in kafka.csr -CA ca.crt -CAkey ca.key \
+  -CAcreateserial -out kafka.crt -days $VALID_DAYS
 
-echo "==== 5) Import CA nel keystore ===="
+echo "==== 5) Import della CA nel keystore ===="
 keytool -import -noprompt \
   -alias my-ca \
   -file ca.crt \
@@ -64,12 +62,10 @@ keytool -import -noprompt \
   -keystore kafka.truststore.jks \
   -storepass "$STORE_PASS"
 
-echo "=== Fine generazione Keystore & Truststore ==="
-echo "File generati:"
-echo "  - ca.key  (chiave privata CA)"
-echo "  - ca.crt  (certificato CA)"
+echo "=== Generazione completata ==="
+echo "I seguenti file sono stati creati nella cartella:"
+echo "  - ca.key"
+echo "  - ca.crt"
 echo "  - kafka.keystore.jks"
 echo "  - kafka.truststore.jks"
-echo "  - kafka.csr, kafka.crt"
-echo ""
-echo "Password keystore/truststore: $STORE_PASS"
+echo "  - kafka.csr e kafka.crt"
