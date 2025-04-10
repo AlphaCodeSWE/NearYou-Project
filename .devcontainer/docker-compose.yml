@@ -89,9 +89,7 @@ services:
     depends_on:
       - clickhouse
     volumes:
-      # Monta la cartella che contiene lo script; assumiamo che "scripts" si trovi nella radice del progetto
       - ../scripts:/scripts:ro
-      # Per accedere al docker socket (se necessario, ma in questo caso potresti non averne bisogno perché usiamo docker:latest che contiene il client docker)
       - /var/run/docker.sock:/var/run/docker.sock
     entrypoint: ["/bin/sh", "-c", "sleep 30 && /scripts/init_clickhouse.sh"]
     restart: "no"
