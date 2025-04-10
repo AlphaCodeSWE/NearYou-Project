@@ -4,23 +4,20 @@
   "service": "app",
   "workspaceFolder": "/workspace",
   
-  // Uso porte per tecnologie
-  // - 8081: Per l'interfaccia web di NiFi.
-  // - 1883: Per HiveMQ MQTT.
-  // - 9093 e 9092: Per Kafka (9093 per SSL, 9092 per PLAINTEXT se necessario).
-  // - 8080: Per l'interfaccia web di HiveMQ.
-  // - 8123 e 9000: Per ClickHouse (8123 per l’interfaccia HTTP, 9000 per le connessioni TCP).
-  // - 3000: Per l'interfaccia di Grafana.
+  // Porte forwardate per le tecnologie:
+  // - 8081: per l'interfaccia web di NiFi.
+  // - 1883: per HiveMQ MQTT.
+  // - 9093 e 9092: per Kafka (9093 per SSL, 9092 per PLAINTEXT se necessario).
+  // - 8080: per l'interfaccia web di HiveMQ.
+  // - 8123 e 9000: per ClickHouse (8123 per l’interfaccia HTTP, 9000 per le connessioni TCP).
+  // - 3000: per l'interfaccia di Grafana.
   "forwardPorts": [8081, 1883, 9093, 9092, 8080, 8123, 9000, 3000],
   
-  // Possibilità di usare Docker e Docker-compose, dentro il container "app"
   "features": {
     "docker-in-docker": "latest"
   },
   
-  // Installo le dipendenze Python da file e inizializzo ClickHouse
   "postCreateCommand": "chmod +x ../scripts/init_clickhouse.sh && pip install -r requirements.txt || true && ../scripts/init_clickhouse.sh",
-
-  // Utente di default per i comandi nel container
+  
   "remoteUser": "vscode"
 }
