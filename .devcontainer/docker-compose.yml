@@ -17,30 +17,21 @@ services:
 
   kafka:
     image: bitnami/kafka:latest
-    env_file:
-      - .env
     volumes:
-      - ../certs:/bitnami/kafka/config/certs
       - kafka_data:/bitnami/kafka
     environment:
-      # Modalità KRaft (senza Zookeeper)
-      - ALLOW_PLAINTEXT_LISTENER=no
-      - KAFKA_CFG_LISTENERS=SSL://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=SSL://kafka:9093
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=SSL:SSL
-      - KAFKA_CFG_SSL_KEYSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.keystore.jks
-      - KAFKA_CFG_SSL_KEYSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
-      - KAFKA_CFG_SSL_KEY_PASSWORD=${KAFKA_KEYSTORE_PASS}
-      - KAFKA_CFG_SSL_TRUSTSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.truststore.jks
-      - KAFKA_CFG_SSL_TRUSTSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
+      # Disabilita KRaft per utilizzare la modalità legacy con Zookeeper
+      - KAFKA_ENABLE_KRAFT=false
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      # Abilita il listener in modalità PLAINTEXT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
       - KAFKA_BROKER_ID=1
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
-      # Parametri KRaft obbligatori
-      - KAFKA_CFG_PROCESS_ROLES=broker
-      - KAFKA_CFG_NODE_ID=1
-      - KAFKA_CLUSTER_ID=my-cluster
     ports:
-      - "9093:9093"
+      - "9092:9092"
     depends_on:
       - zookeeper
 
