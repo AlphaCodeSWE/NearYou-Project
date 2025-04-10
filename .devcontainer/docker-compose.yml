@@ -89,10 +89,10 @@ services:
     depends_on:
       - clickhouse
     volumes:
-      - ./scripts:/scripts
-      - /var/run/docker.sock:/var/run/docker.sock
+       - ./scripts:/scripts
+       - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /scripts
-    entrypoint: ["/bin/sh", "-c", "sleep 30 && chmod +x init_clickhouse.sh && ./init_clickhouse.sh"]
+    entrypoint: ["/bin/bash", "-c", "chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh && /workspace/.devcontainer/scripts/init_clickhouse.sh && sleep infinity"]
     restart: "no"
 
 
