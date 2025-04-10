@@ -23,7 +23,7 @@ services:
       - ../certs:/bitnami/kafka/config/certs
       - kafka_data:/bitnami/kafka
     environment:
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      # Modalità KRaft (senza Zookeeper)
       - ALLOW_PLAINTEXT_LISTENER=no
       - KAFKA_CFG_LISTENERS=SSL://:9093
       - KAFKA_CFG_ADVERTISED_LISTENERS=SSL://kafka:9093
@@ -35,8 +35,10 @@ services:
       - KAFKA_CFG_SSL_TRUSTSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
       - KAFKA_BROKER_ID=1
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      # Parametri KRaft obbligatori
       - KAFKA_CFG_PROCESS_ROLES=broker
       - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CLUSTER_ID=my-cluster
     ports:
       - "9093:9093"
     depends_on:
