@@ -1,11 +1,13 @@
 #!/bin/bash
 set -e
 
+echo "--- Inizio script di inizializzazione ---"
 echo "Working directory: $(pwd)"
-echo "Files in directory: $(ls -l)"
+echo "Elenco dei file nella directory:"
+ls -l
 
-echo "Attesa per essere sicuri che ClickHouse sia pronto..."
-sleep 30
+echo "Attesa 60 secondi affinché ClickHouse sia pronto..."
+sleep 60
 
 echo "Creazione della tabella users..."
 docker exec -i clickhouse-server clickhouse-client <<EOF
