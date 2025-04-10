@@ -66,16 +66,16 @@ services:
       - "8081:8081"
 
   clickhouse:
-  image: clickhouse/clickhouse-server:latest
-  container_name: clickhouse-server
-  environment:
-    - CLICKHOUSE_USER=default
-    - CLICKHOUSE_PASSWORD=pwe@123@l@
-  volumes:
-    - clickhouse_data:/var/lib/clickhouse
-  ports:
-    - "8123:8123"
-    - "9000:9000"
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse-server
+    environment:
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=pwe@123@l@
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
 
 
   grafana:
