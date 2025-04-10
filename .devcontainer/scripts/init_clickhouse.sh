@@ -1,8 +1,11 @@
 #!/bin/bash
 set -e
 
-# Attendere alcuni secondi affinché ClickHouse sia pronto
-sleep 10
+echo "Working directory: $(pwd)"
+echo "Files in directory: $(ls -l)"
+
+echo "Attesa per essere sicuri che ClickHouse sia pronto..."
+sleep 30
 
 echo "Creazione della tabella users..."
 docker exec -i clickhouse-server clickhouse-client <<EOF
