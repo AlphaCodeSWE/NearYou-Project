@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.8"
 
 services:
   app:
@@ -20,10 +20,10 @@ services:
     volumes:
       - kafka_data:/bitnami/kafka
     environment:
-      # Disabilita KRaft per utilizzare la modalità legacy con Zookeeper
+      # Disabilita Kraft per forzare il vecchio comportamento basato su Zookeeper
       - KAFKA_ENABLE_KRAFT=false
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      # Abilita il listener in modalità PLAINTEXT
+      # Abilita il listener PLAINTEXT
       - ALLOW_PLAINTEXT_LISTENER=yes
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
