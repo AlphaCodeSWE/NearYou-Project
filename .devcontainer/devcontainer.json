@@ -5,23 +5,20 @@
   "workspaceFolder": "/workspace",
   
   // Uso porte per le tecnologie:
-  // - 8081: per l'interfaccia web di NiFi.
-  // - 1883: per HiveMQ MQTT.
-  // - 9093 e 9092: per Kafka (9093 per SSL, 9092 per PLAINTEXT se necessario).
-  // - 8080: per l'interfaccia web di HiveMQ.
-  // - 8123 e 9000: per ClickHouse (8123 per l’interfaccia HTTP, 9000 per connessioni TCP).
-  // - 3000: per l'interfaccia di Grafana.
+  //  - 8081 per NiFi
+  //  - 1883 per HiveMQ MQTT
+  //  - 9093 e 9092 per Kafka (9093 per SSL, 9092 per PLAINTEXT)
+  //  - 8080 per l'interfaccia web di HiveMQ
+  //  - 8123 per l'interfaccia HTTP di ClickHouse
+  //  - 9000 per connessioni TCP a ClickHouse
+  //  - 3000 per Grafana
   "forwardPorts": [8081, 1883, 9093, 9092, 8080, 8123, 9000, 3000],
   
   "features": {
     "docker-in-docker": "latest"
   },
-
-  // Monta automaticamente il socket Docker per permettere l'esecuzione dei comandi docker
-  "mountDockerSocket": true,
   
-  
-  "postCreateCommand": "chmod +x ../scripts/init_clickhouse.sh && pip install -r requirements.txt || true && ../scripts/init_clickhouse.sh",
+  "postCreateCommand": "chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh && /workspace/.devcontainer/scripts/init_clickhouse.sh",
   
   "remoteUser": "vscode"
 }
