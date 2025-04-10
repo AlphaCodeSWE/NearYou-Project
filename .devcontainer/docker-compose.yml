@@ -20,36 +20,31 @@ services:
     env_file:
       - .env
     volumes:
-      # Monta la cartella con i certificati
+      # Monta la cartella dei certificati dalla radice (../certs)
       - ../certs:/bitnami/kafka/config/certs
+      # Monta la cartella di configurazione del client dalla radice (../client_config)
       - ../client_config:/opt/client_config:ro
       - kafka_data:/bitnami/kafka
     environment:
-      # Usa Zookeeper, disabilita KRaft
+      # Utilizzo di Zookeeper e disabilitazione di KRaft
       - KAFKA_ENABLE_KRAFT=false
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      
-      # Disabilita il listener PLAINTEXT
       - ALLOW_PLAINTEXT_LISTENER=no
-      
-      # Configurazione per l'uso di SSL
+      # Configurazione per SSL
       - KAFKA_CFG_LISTENERS=SSL://:9093
       - KAFKA_CFG_ADVERTISED_LISTENERS=SSL://kafka:9093
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=SSL
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=SSL:SSL
-      
-      # Percorsi keystore/truststore
+      # Percorsi dei file SSL (keystore e truststore montati dalla cartella certs)
       - KAFKA_CFG_SSL_KEYSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.keystore.jks
       - KAFKA_CFG_SSL_KEYSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
       - KAFKA_CFG_SSL_KEY_PASSWORD=${KAFKA_KEYSTORE_PASS}
       - KAFKA_CFG_SSL_TRUSTSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.truststore.jks
       - KAFKA_CFG_SSL_TRUSTSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
-      
-      # Specifica che entrambi i file sono in formato PKCS12
+      # Specifica il formato dei file (PKCS12 in questo caso)
       - KAFKA_CFG_SSL_KEYSTORE_TYPE=PKCS12
       - KAFKA_CFG_SSL_TRUSTSTORE_TYPE=PKCS12
-      
-      # Altre impostazioni di Kafka
+      # Impostazioni generali di Kafka
       - KAFKA_BROKER_ID=1
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
     ports:
@@ -70,5 +65,26 @@ services:
     ports:
       - "8081:8081"
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse-server
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    ports:
+      - "8123:8123"   # Interfaccia HTTP di ClickHouse
+      - "9000:9000"   # Porta TCP di ClickHouse
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - clickhouse
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+
 volumes:
   kafka_data:
+  clickhouse_data:
+  grafana_data:
