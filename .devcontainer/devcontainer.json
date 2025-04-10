@@ -19,7 +19,8 @@
   },
   
   // Installo le dipendenze Python da file e inizializzo ClickHouse
-  "postCreateCommand": "chmod +x ./scripts/init_clickhouse.sh && pip install -r requirements.txt || true && ./scripts/init_clickhouse.sh",
+  "postCreateCommand": "chmod +x ../scripts/init_clickhouse.sh && pip install -r requirements.txt || true && ../scripts/init_clickhouse.sh",
+
   // Utente di default per i comandi nel container
   "remoteUser": "vscode"
 }
