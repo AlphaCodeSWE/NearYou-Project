@@ -16,7 +16,7 @@ services:
       - "2181:2181"
 
   kafka:
-    image: bitnami/kafka:3.4 
+    image: bitnami/kafka:3.4
     env_file:
       - .env
     volumes:
@@ -24,22 +24,31 @@ services:
       - ../certs:/bitnami/kafka/config/certs
       - kafka_data:/bitnami/kafka
     environment:
-      # Disabilita KRaft e usa Zookeeper
+      # Usa Zookeeper, disabilita KRaft
       - KAFKA_ENABLE_KRAFT=false
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      
+      # Disabilita il listener PLAINTEXT
       - ALLOW_PLAINTEXT_LISTENER=no
       
-      # Configurazione SSL
+      # Configurazione per l'uso di SSL
       - KAFKA_CFG_LISTENERS=SSL://:9093
       - KAFKA_CFG_ADVERTISED_LISTENERS=SSL://kafka:9093
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=SSL
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=SSL:SSL
+      
+      # Percorsi keystore/truststore
       - KAFKA_CFG_SSL_KEYSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.keystore.jks
       - KAFKA_CFG_SSL_KEYSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
       - KAFKA_CFG_SSL_KEY_PASSWORD=${KAFKA_KEYSTORE_PASS}
       - KAFKA_CFG_SSL_TRUSTSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.truststore.jks
       - KAFKA_CFG_SSL_TRUSTSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
       
+      # Specifica che entrambi i file sono in formato PKCS12
+      - KAFKA_CFG_SSL_KEYSTORE_TYPE=PKCS12
+      - KAFKA_CFG_SSL_TRUSTSTORE_TYPE=PKCS12
+      
+      # Altre impostazioni di Kafka
       - KAFKA_BROKER_ID=1
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
     ports:
