@@ -15,15 +15,12 @@ services:
     ports:
       - "2181:2181"
 
-  kafka:
+ kafka:
     image: bitnami/kafka:latest
-    # Carichiamo le variabili da .env (stessa directory di docker-compose.yml)
     env_file:
       - .env
     volumes:
-      # Montiamo la cartella certs dalla root del progetto a /bitnami/kafka/config/certs
       - ../certs:/bitnami/kafka/config/certs
-      # Volume persistente per i dati di Kafka
       - kafka_data:/bitnami/kafka
     environment:
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
@@ -31,9 +28,6 @@ services:
       - KAFKA_CFG_LISTENERS=SSL://:9093
       - KAFKA_CFG_ADVERTISED_LISTENERS=SSL://kafka:9093
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=SSL:SSL
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=SSL
-      - KAFKA_CFG_PROCESS_ROLES=broker
-      - KAFKA_CFG_NODE_ID=1
       - KAFKA_CFG_SSL_KEYSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.keystore.jks
       - KAFKA_CFG_SSL_KEYSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
       - KAFKA_CFG_SSL_KEY_PASSWORD=${KAFKA_KEYSTORE_PASS}
@@ -41,11 +35,11 @@ services:
       - KAFKA_CFG_SSL_TRUSTSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
       - KAFKA_BROKER_ID=1
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
-      - KAFKA_CLUSTER_ID=myClusterId
     ports:
       - "9093:9093"
     depends_on:
       - zookeeper
+
 
   hivemq:
     image: hivemq/hivemq-ce:latest
