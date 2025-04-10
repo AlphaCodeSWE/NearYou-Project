@@ -83,19 +83,7 @@ services:
     ports:
       - "3000:3000"
 
-  init-clickhouse:
-    image: docker:latest
-    container_name: clickhouse-init
-    depends_on:
-      - clickhouse
-    volumes:
-      # Poiché il file init_clickhouse.sh ora si trova in .devcontainer/scripts, e il file docker-compose.yml è anch'esso in .devcontainer,
-      # usiamo il percorso relativo "./scripts" per montare la cartella
-      - ./scripts:/scripts
-      - /var/run/docker.sock:/var/run/docker.sock
-    working_dir: /scripts
-    entrypoint: ["/bin/bash", "-c", "chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh && /workspace/.devcontainer/scripts/init_clickhouse.sh"]
-    restart: "no"
+ 
 
 volumes:
   kafka_data:
