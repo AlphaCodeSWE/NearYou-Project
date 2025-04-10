@@ -16,6 +16,9 @@
   "features": {
     "docker-in-docker": "latest"
   },
+
+  // Monta automaticamente il socket Docker per permettere l'esecuzione dei comandi docker
+  "mountDockerSocket": true,
   
   
   "postCreateCommand": "chmod +x ../scripts/init_clickhouse.sh && pip install -r requirements.txt || true && ../scripts/init_clickhouse.sh",
