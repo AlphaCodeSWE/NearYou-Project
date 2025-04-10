@@ -16,18 +16,19 @@ services:
       - "2181:2181"
 
   kafka:
-    image: bitnami/kafka:latest
+    image: bitnami/kafka:3.4 
     env_file:
       - .env
     volumes:
+      # Monta la cartella con i certificati
       - ../certs:/bitnami/kafka/config/certs
       - kafka_data:/bitnami/kafka
     environment:
-      # Usa Zookeeper (modo legacy, KRaft disabilitato)
+      # Disabilita KRaft e usa Zookeeper
       - KAFKA_ENABLE_KRAFT=false
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      # Disabilita il PLAINTEXT listener per usare SSL
       - ALLOW_PLAINTEXT_LISTENER=no
+      
       # Configurazione SSL
       - KAFKA_CFG_LISTENERS=SSL://:9093
       - KAFKA_CFG_ADVERTISED_LISTENERS=SSL://kafka:9093
@@ -37,6 +38,7 @@ services:
       - KAFKA_CFG_SSL_KEY_PASSWORD=${KAFKA_KEYSTORE_PASS}
       - KAFKA_CFG_SSL_TRUSTSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.truststore.jks
       - KAFKA_CFG_SSL_TRUSTSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
+      
       - KAFKA_BROKER_ID=1
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
     ports:
