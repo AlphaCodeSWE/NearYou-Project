@@ -90,7 +90,7 @@ services:
       - clickhouse
     volumes:
       # Qui montiamo la cartella "scripts" dalla root del progetto (un livello sopra .devcontainer)
-      - ../scripts:/scripts
+      - ./.devcontainer/scripts:/scripts
       - /var/run/docker.sock:/var/run/docker.sock
     entrypoint: ["/bin/sh", "-c", "sleep 30 && chmod +x /scripts/init_clickhouse.sh && /scripts/init_clickhouse.sh"]
     restart: "no"
