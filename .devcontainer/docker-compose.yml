@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.9"
 
 services:
   app:
@@ -17,21 +17,30 @@ services:
 
   kafka:
     image: bitnami/kafka:latest
+    env_file:
+      - .env
     volumes:
+      - ../certs:/bitnami/kafka/config/certs
       - kafka_data:/bitnami/kafka
     environment:
-      # Disabilita Kraft per forzare il vecchio comportamento basato su Zookeeper
+      # Usa Zookeeper (modo legacy, KRaft disabilitato)
       - KAFKA_ENABLE_KRAFT=false
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      # Abilita il listener PLAINTEXT
-      - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
+      # Disabilita il PLAINTEXT listener per usare SSL
+      - ALLOW_PLAINTEXT_LISTENER=no
+      # Configurazione SSL
+      - KAFKA_CFG_LISTENERS=SSL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=SSL://kafka:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=SSL:SSL
+      - KAFKA_CFG_SSL_KEYSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.keystore.jks
+      - KAFKA_CFG_SSL_KEYSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
+      - KAFKA_CFG_SSL_KEY_PASSWORD=${KAFKA_KEYSTORE_PASS}
+      - KAFKA_CFG_SSL_TRUSTSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.truststore.jks
+      - KAFKA_CFG_SSL_TRUSTSTORE_PASSWORD=${KAFKA_KEYSTORE_PASS}
       - KAFKA_BROKER_ID=1
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
     ports:
-      - "9092:9092"
+      - "9093:9093"
     depends_on:
       - zookeeper
 
