@@ -11,7 +11,6 @@ services:
     command: sleep infinity
     privileged: true
 
-
   zookeeper:
     image: bitnami/zookeeper:latest
     environment:
@@ -83,6 +82,19 @@ services:
       - grafana_data:/var/lib/grafana
     ports:
       - "3000:3000"
+
+  init-clickhouse:
+    image: docker:latest
+    container_name: clickhouse-init
+    depends_on:
+      - clickhouse
+    volumes:
+      # Monta la cartella che contiene lo script; assumiamo che "scripts" si trovi nella radice del progetto
+      - ../scripts:/scripts:ro
+      # Per accedere al docker socket (se necessario, ma in questo caso potresti non averne bisogno perché usiamo docker:latest che contiene il client docker)
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["/bin/sh", "-c", "sleep 30 && /scripts/init_clickhouse.sh"]
+    restart: "no"
 
 volumes:
   kafka_data:
