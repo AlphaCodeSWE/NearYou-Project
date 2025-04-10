@@ -92,7 +92,7 @@ services:
       - ./scripts:/scripts
       - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /scripts
-    entrypoint: ["/bin/sh", "-c", "sleep 30 && ./init_clickhouse.sh"]
+    entrypoint: ["/bin/sh", "-c", "sleep 30 && chmod +x init_clickhouse.sh && ./init_clickhouse.sh"]
     restart: "no"
 
 
