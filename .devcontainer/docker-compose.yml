@@ -22,7 +22,7 @@ services:
     volumes:
       # Monta la cartella con i certificati
       - ../certs:/bitnami/kafka/config/certs
-      - ./config:/opt/bitnami/kafka/config
+      - ./client_config:/opt/client_config:ro
       - kafka_data:/bitnami/kafka
     environment:
       # Usa Zookeeper, disabilita KRaft
