@@ -9,7 +9,7 @@
   // - 1883 HiveMQ MQTT, per la connessione usa questa porta, interfaccia web su 8080
   // - 9093 Kafka, usa listener di default sulla 9092 in configurazione PLAINTEXT, 9093 con SSL
   // - 8080 per UI HiveMQ
-  "forwardPorts": [8081, 1883, 9093, 8080],
+  "forwardPorts": [8081, 1883, 9093,9092, 8080],
   
   // Possibilità di usare Docker e Docker-compose, dentro il container "app"
   "features": {
