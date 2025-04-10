@@ -15,7 +15,7 @@ services:
     ports:
       - "2181:2181"
 
- kafka:
+  kafka:
     image: bitnami/kafka:latest
     env_file:
       - .env
@@ -39,7 +39,6 @@ services:
       - "9093:9093"
     depends_on:
       - zookeeper
-
 
   hivemq:
     image: hivemq/hivemq-ce:latest
