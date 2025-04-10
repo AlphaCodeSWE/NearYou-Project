@@ -22,6 +22,7 @@
   
   // Installo le dipendenze Python da file 
   "postCreateCommand": "pip install -r requirements.txt || true",
+  "postCreateCommand": "pip install -r requirements.txt || true && ./scripts/init_clickhouse.sh",
   
   // Utente di default per i comandi nel container
   "remoteUser": "vscode"
