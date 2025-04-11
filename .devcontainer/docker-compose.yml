@@ -71,7 +71,7 @@ services:
     ports:
       - "3000:3000"
 
-  # Servizio ClickHouse (e segue l'inizializzazione)
+  # Servizio ClickHouse
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: clickhouse-server
@@ -84,9 +84,11 @@ services:
       - "8123:8123"
       - "9000:9000"
 
+  # Servizio di inizializzazione di ClickHouse
   init_clickhouse:
-    # Utilizza l'immagine del servizio "app" per avere accesso al repository (e quindi allo script)
-    image: devcontainer-app
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
     volumes:
       - ..:/workspace:cached
       - /var/run/docker.sock:/var/run/docker.sock
