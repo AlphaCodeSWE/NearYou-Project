@@ -6,8 +6,12 @@ RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/
 # Imposta la directory di lavoro
 WORKDIR /workspace
 
-# Assicurati che lo script di inizializzazione abbia i permessi di esecuzione
-RUN chmod +x .devcontainer/scripts/init_clickhouse.sh
+# Copia la cartella degli script dall'host all'interno dell'immagine
+# Il contesto di build è la radice del repository (NearYou-Project)
+COPY .devcontainer/scripts /workspace/.devcontainer/scripts
 
-# Mantieni il container in esecuzione
+# Imposta i permessi di esecuzione per lo script di inizializzazione
+RUN chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh
+
+# Mantieni il container in esecuzione (come default)
 CMD ["sleep", "infinity"]
