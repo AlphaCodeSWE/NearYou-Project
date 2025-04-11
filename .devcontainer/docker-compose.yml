@@ -92,7 +92,7 @@ services:
     volumes:
       - ..:/workspace:cached
       - /var/run/docker.sock:/var/run/docker.sock
-    command: /workspace/.devcontainer/scripts/init_clickhouse.sh
+    command: bash -c "chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh && /workspace/.devcontainer/scripts/init_clickhouse.sh"
     depends_on:
       - clickhouse
     restart: "no"
