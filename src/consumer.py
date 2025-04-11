@@ -2,20 +2,30 @@ import json
 from kafka import KafkaConsumer
 from clickhouse_driver import Client
 
-#conf
-BROKER='kafka:9093'
-TOPIC='gps_stream'
-COSUMER_GROUP= 'gps_consumer_group'
+# Conf
+BROKER = 'kafka:9093'   # Porta SSL
+TOPIC = 'gps_stream'
+CONSUMER_GROUP = 'gps_consumers_group'
 
-#inzializzo il consumer di Kakfa
+# Percorsi certificati (adatta i path se necessario)
+SSL_CAFILE = '/workspace/certs/ca.pem'
+SSL_CERTFILE = '/workspace/certs/client_cert.pem'
+SSL_KEYFILE = '/workspace/certs/client_key.pem'
 
-consumer= KafkaConsumer(
+# Inizializza il KafkaConsumer con SSL
+consumer = KafkaConsumer(
     TOPIC,
-    bootstrap_server=[BROKER],
-    auto_offset_reset='earliest', #leggo dal primo mex disponibile
-    group_id=CONSUEMER_GROUP,
+    bootstrap_servers=[BROKER],
+    security_protocol='SSL',
+    ssl_check_hostname=True,
+    ssl_cafile=SSL_CAFILE,
+    ssl_certfile=SSL_CERTFILE,
+    ssl_keyfile=SSL_KEYFILE,
+    auto_offset_reset='earliest',
+    group_id=CONSUMER_GROUP,
     value_deserializer=lambda m: json.loads(m.decode('utf-8'))
 )
+
 
 #conn a ClickHouse
 

@@ -3,18 +3,26 @@ import random
 import time
 from kafka import KafkaProducer
 
-#Conf per kafka
-BROKER='kafka:9093'
-TOPIC='gps_stream'
-MESSAGES_SECOND=5 #numero mex al sec
+# Conf per kafka
+BROKER = 'kafka:9093'   # Porta SSL
+TOPIC = 'gps_stream'
+MESSAGES_PER_SECOND = 5
 
-#inizializzo il KafkaProduer con serializz JSON
+# Configura i percorsi dei certificati (adatta i path se necessario)
+SSL_CAFILE = '/workspace/certs/ca.pem'
+SSL_CERTFILE = '/workspace/certs/client_cert.pem'
+SSL_KEYFILE = '/workspace/certs/client_key.pem'
 
+# Inizializza il KafkaProducer con SSL
 producer = KafkaProducer(
     bootstrap_servers=[BROKER],
+    security_protocol='SSL',
+    ssl_check_hostname=True,      # In produzione è preferibile lasciarlo True se i certificati sono validi
+    ssl_cafile=SSL_CAFILE,
+    ssl_certfile=SSL_CERTFILE,
+    ssl_keyfile=SSL_KEYFILE,
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
-
 
 def generate_random_gps():
     #uso area di milano per test
