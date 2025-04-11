@@ -9,8 +9,16 @@ ls -l
 echo "Attesa 60 secondi affinché ClickHouse sia pronto..."
 sleep 60
 
+# Creazione del database se non esiste
+echo "Creazione del database 'nearyou' (se non esiste già)..."
+docker exec -i clickhouse-server clickhouse-client <<EOF
+CREATE DATABASE IF NOT EXISTS nearyou;
+EOF
+
+# Creazione della tabella users all'interno del database 'nearyou'
 echo "Creazione della tabella users..."
 docker exec -i clickhouse-server clickhouse-client <<EOF
+USE nearyou;
 CREATE TABLE IF NOT EXISTS users (
     user_id           UInt64,
     username          String,
@@ -30,8 +38,10 @@ CREATE TABLE IF NOT EXISTS users (
 ORDER BY user_id;
 EOF
 
+# Creazione della tabella user_events all'interno del database 'nearyou'
 echo "Creazione della tabella user_events..."
 docker exec -i clickhouse-server clickhouse-client <<EOF
+USE nearyou;
 CREATE TABLE IF NOT EXISTS user_events (
     event_id   UInt64,
     event_time DateTime,
