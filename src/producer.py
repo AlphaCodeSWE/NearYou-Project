@@ -12,7 +12,7 @@ MESSAGES_SECOND=5 #numero mex al sec
 
 producer=KafkaProducer(
     bootstrap_servers=[BROKER],
-    value_serializer=lamba v: json.dumps(v).encode('utf-8')
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
 def generate_random_gps():
