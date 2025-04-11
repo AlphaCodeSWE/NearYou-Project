@@ -1,23 +1,39 @@
+#!/usr/bin/env python3
 import json
 import random
 import time
+import socket
 from kafka import KafkaProducer
 
-# Conf per kafka
-BROKER = 'kafka:9093'   # Porta SSL
+# Configurazioni
+BROKER = 'kafka:9093'
 TOPIC = 'gps_stream'
 MESSAGES_PER_SECOND = 5
 
-# Configura i percorsi dei certificati (adatta i path se necessario)
+# Percorsi dei certificati (verifica che questi siano corretti e che la cartella /workspace/certs sia montata)
 SSL_CAFILE = '/workspace/certs/ca.pem'
 SSL_CERTFILE = '/workspace/certs/client_cert.pem'
 SSL_KEYFILE = '/workspace/certs/client_key.pem'
 
-# Inizializza il KafkaProducer con SSL
+def wait_for_broker(host, port, timeout=2):
+    """Attende finché il broker non risponde sulla porta specificata."""
+    while True:
+        try:
+            with socket.create_connection((host, port), timeout):
+                print(f"Broker {host}:{port} disponibile")
+                return
+        except Exception as e:
+            print(f"Attendo broker {host}:{port}... {e}")
+            time.sleep(2)
+
+# Attende che il broker Kafka sia raggiungibile
+wait_for_broker('kafka', 9093)
+
+# Inizializza il KafkaProducer con configurazione SSL
 producer = KafkaProducer(
     bootstrap_servers=[BROKER],
     security_protocol='SSL',
-    ssl_check_hostname=True,      # In produzione è preferibile lasciarlo True se i certificati sono validi
+    ssl_check_hostname=True,  # Imposta a True se i certificati sono validi; altrimenti impostalo a False per test
     ssl_cafile=SSL_CAFILE,
     ssl_certfile=SSL_CERTFILE,
     ssl_keyfile=SSL_KEYFILE,
@@ -25,23 +41,22 @@ producer = KafkaProducer(
 )
 
 def generate_random_gps():
-    #uso area di milano per test
-    lat=random.uniform(45.40, 45.50)
-    lon=random.uniform(9.10, 9.30)
+    """Genera dati GPS simulati (posizione nell'area di Milano)."""
+    lat = random.uniform(45.40, 45.50)
+    lon = random.uniform(9.10, 9.30)
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    return{
-        "user_id":random.randint(1,1000),
-        "latitudine":lat,
-        "longitudine":lon,
-        "timestamp":timestamp
+    return {
+        "user_id": random.randint(1, 1000),
+        "latitude": lat,
+        "longitude": lon,
+        "timestamp": timestamp
     }
 
 if __name__ == '__main__':
-    print("Avvio simulatore dati GPS")
+    print("Avvio del simulatore di dati GPS in modalità streaming (SSL)...")
     while True:
-        message=generate_random_gps
-        producer.send(TOPIC,message)
-        producer.flush() #mi assicuro che il mex venga inviato all'sistante
-        printf(f"inviato:{message}")
-        time.sleep(1.0/ MESSAGES_SECOND)
-        
+        message = generate_random_gps()
+        producer.send(TOPIC, message)
+        producer.flush()
+        print(f"Inviato: {message}")
+        time.sleep(1.0 / MESSAGES_PER_SECOND)
