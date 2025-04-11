@@ -9,9 +9,10 @@ BROKER = 'kafka:9093'
 TOPIC = 'gps_stream'
 CONSUMER_GROUP = 'gps_consumers_group'
 
-SSL_CAFILE = '/workspace/certs/ca.crt'
+# Percorsi dei certificati per mutual TLS
+SSL_CAFILE   = '/workspace/certs/ca.crt'
 SSL_CERTFILE = '/workspace/certs/client_cert.pem'
-SSL_KEYFILE = '/workspace/certs/client_key.pem'
+SSL_KEYFILE  = '/workspace/certs/client_key.pem'
 
 consumer = KafkaConsumer(
     TOPIC,
@@ -64,14 +65,14 @@ print("Consumer in ascolto sul topic:", TOPIC)
 for message in consumer:
     data = message.value
     event = (
-        generate_event_id(),      # event_id
-        data['timestamp'],        # event_time
-        data['user_id'],          # user_id
-        data['latitude'],         # latitude
-        data['longitude'],        # longitude
-        0.0,                      # poi_range
-        '',                       # poi_name
-        ''                        # poi_info
+        generate_event_id(),    # event_id
+        data['timestamp'],      # event_time
+        data['user_id'],
+        data['latitude'],
+        data['longitude'],
+        0.0,                    # poi_range
+        '',                     # poi_name
+        ''                      # poi_info
     )
     client.execute(
         'INSERT INTO user_events (event_id, event_time, user_id, latitude, longitude, poi_range, poi_name, poi_info) VALUES',

@@ -10,13 +10,12 @@ BROKER = 'kafka:9093'
 TOPIC = 'gps_stream'
 MESSAGES_PER_SECOND = 5
 
-# Percorsi dei certificati 
-SSL_CAFILE = '/workspace/certs/ca.crt'
+# Percorsi dei certificati per mutual TLS
+SSL_CAFILE   = '/workspace/certs/ca.crt'
 SSL_CERTFILE = '/workspace/certs/client_cert.pem'
-SSL_KEYFILE = '/workspace/certs/client_key.pem'
+SSL_KEYFILE  = '/workspace/certs/client_key.pem'
 
 def wait_for_broker(host, port, timeout=2):
-    """Attende finché il broker non risponde sulla porta specificata."""
     while True:
         try:
             with socket.create_connection((host, port), timeout):
@@ -29,11 +28,11 @@ def wait_for_broker(host, port, timeout=2):
 # Attende che il broker Kafka sia raggiungibile
 wait_for_broker('kafka', 9093)
 
-# Inizializza il KafkaProducer con configurazione SSL
+# Inizializza il KafkaProducer con configurazione mutual TLS
 producer = KafkaProducer(
     bootstrap_servers=[BROKER],
     security_protocol='SSL',
-    ssl_check_hostname=True,  
+    ssl_check_hostname=True,
     ssl_cafile=SSL_CAFILE,
     ssl_certfile=SSL_CERTFILE,
     ssl_keyfile=SSL_KEYFILE,
@@ -52,7 +51,7 @@ def generate_random_gps():
     }
 
 if __name__ == '__main__':
-    print("Avvio del simulatore di dati GPS in modalità streaming (SSL)...")
+    print("Avvio del simulatore di dati GPS in modalità mutual TLS...")
     while True:
         message = generate_random_gps()
         producer.send(TOPIC, message)
