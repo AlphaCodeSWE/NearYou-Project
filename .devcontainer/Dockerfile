@@ -6,6 +6,10 @@ RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/
 # Imposta la directory di lavoro
 WORKDIR /workspace
 
+# Copia il file delle dipendenze e installa i pacchetti Python necessari
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
 # Copia la cartella degli script dall'host all'interno dell'immagine
 # Il contesto di build è la radice del repository (NearYou-Project)
 COPY .devcontainer/scripts /workspace/.devcontainer/scripts
