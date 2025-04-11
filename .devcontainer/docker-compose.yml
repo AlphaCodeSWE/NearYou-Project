@@ -85,15 +85,16 @@ services:
 
   init_clickhouse:
     build:
-      context: ..
-      dockerfile: .devcontainer/Dockerfile
+     context: ..
+     dockerfile: .devcontainer/Dockerfile
     volumes:
-      - ..:/workspace:cached
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: /workspace/.devcontainer/scripts/init_clickhouse.sh
+     - ..:/workspace:cached
+     - /var/run/docker.sock:/var/run/docker.sock
+    command: bash -c "chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh && /workspace/.devcontainer/scripts/init_clickhouse.sh"
     depends_on:
-      - clickhouse
+     - clickhouse
     restart: "no"
+
 
   #  Producer per la simulazione
   producer:
