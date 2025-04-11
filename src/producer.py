@@ -10,8 +10,8 @@ BROKER = 'kafka:9093'
 TOPIC = 'gps_stream'
 MESSAGES_PER_SECOND = 5
 
-# Percorsi dei certificati (verifica che questi siano corretti e che la cartella /workspace/certs sia montata)
-SSL_CAFILE = '/workspace/certs/ca.pem'
+# Percorsi dei certificati 
+SSL_CAFILE = '/workspace/certs/ca.crt'
 SSL_CERTFILE = '/workspace/certs/client_cert.pem'
 SSL_KEYFILE = '/workspace/certs/client_key.pem'
 
@@ -33,7 +33,7 @@ wait_for_broker('kafka', 9093)
 producer = KafkaProducer(
     bootstrap_servers=[BROKER],
     security_protocol='SSL',
-    ssl_check_hostname=True,  # Imposta a True se i certificati sono validi; altrimenti impostalo a False per test
+    ssl_check_hostname=True,  
     ssl_cafile=SSL_CAFILE,
     ssl_certfile=SSL_CERTFILE,
     ssl_keyfile=SSL_KEYFILE,
@@ -41,7 +41,6 @@ producer = KafkaProducer(
 )
 
 def generate_random_gps():
-    """Genera dati GPS simulati (posizione nell'area di Milano)."""
     lat = random.uniform(45.40, 45.50)
     lon = random.uniform(9.10, 9.30)
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
