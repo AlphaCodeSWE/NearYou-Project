@@ -11,7 +11,7 @@ MESSAGES_SECOND=5 #numero mex al sec
 #inizializzo il KafkaProduer con serializz JSON
 
 producer=KafkaProducer(
-    bootstrap_servers=[BROKER]
+    bootstrap_servers=[BROKER],
     value_serializer=lamba v: json.dumps(v).encode('utf-8')
 )
 
