@@ -71,7 +71,6 @@ services:
     ports:
       - "3000:3000"
 
-  # Servizio ClickHouse
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: clickhouse-server
@@ -84,7 +83,6 @@ services:
       - "8123:8123"
       - "9000:9000"
 
-  # Servizio di inizializzazione di ClickHouse
   init_clickhouse:
     build:
       context: ..
@@ -92,8 +90,33 @@ services:
     volumes:
       - ..:/workspace:cached
       - /var/run/docker.sock:/var/run/docker.sock
-    command: bash -c "chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh && /workspace/.devcontainer/scripts/init_clickhouse.sh"
+    command: /workspace/.devcontainer/scripts/init_clickhouse.sh
     depends_on:
+      - clickhouse
+    restart: "no"
+
+  #  Producer per la simulazione
+  producer:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    command: python3 /workspace/src/producer.py
+    depends_on:
+      - kafka
+    restart: "no"
+
+  #  Consumer (DB Agent) per l'inserimento dei dati
+  consumer:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    command: python3 /workspace/src/consumer.py
+    depends_on:
+      - kafka
       - clickhouse
     restart: "no"
 
