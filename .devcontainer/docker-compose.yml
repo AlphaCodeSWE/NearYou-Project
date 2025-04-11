@@ -11,6 +11,31 @@ services:
     command: sleep infinity
     privileged: true
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse-server
+    environment:
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=pwe@123@l@
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+
+  init_clickhouse:
+    # Utilizza la stessa immagine usata per il servizio "app", 
+    # così da avere accesso ai file presenti in /workspace
+    image: devcontainer-app
+    volumes:
+      - ..:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Richiama lo script di inizializzazione
+    command: /workspace/.devcontainer/scripts/init_clickhouse.sh
+    depends_on:
+      - clickhouse
+    restart: "no"
+
   zookeeper:
     image: bitnami/zookeeper:latest
     environment:
@@ -61,18 +86,6 @@ services:
     ports:
       - "8081:8081"
 
-  clickhouse:
-    image: clickhouse/clickhouse-server:latest
-    container_name: clickhouse-server
-    environment:
-      - CLICKHOUSE_USER=default
-      - CLICKHOUSE_PASSWORD=pwe@123@l@
-    volumes:
-      - clickhouse_data:/var/lib/clickhouse
-    ports:
-      - "8123:8123"
-      - "9000:9000"
-
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -82,9 +95,7 @@ services:
       - grafana_data:/var/lib/grafana
     ports:
       - "3000:3000"
-
  
-
 volumes:
   kafka_data:
   clickhouse_data:
