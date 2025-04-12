@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import json
 import random
+import time
+import socket
 from kafka import KafkaConsumer
 from clickhouse_driver import Client
 
-# Configurazioni
+# Conf
 BROKER = 'kafka:9093'
 TOPIC = 'gps_stream'
 CONSUMER_GROUP = 'gps_consumers_group'
@@ -13,6 +15,20 @@ CONSUMER_GROUP = 'gps_consumers_group'
 SSL_CAFILE   = '/workspace/certs/ca.crt'
 SSL_CERTFILE = '/workspace/certs/client_cert.pem'
 SSL_KEYFILE  = '/workspace/certs/client_key.pem'
+
+def wait_for_broker(host, port, timeout=2):
+    """Attende finché il broker non risponde sulla porta specificata."""
+    while True:
+        try:
+            with socket.create_connection((host, port), timeout):
+                print(f"Broker {host}:{port} disponibile")
+                return
+        except Exception as e:
+            print(f"Attendo broker {host}:{port}... {e}")
+            time.sleep(2)
+
+# Attendi che il broker Kafka sia raggiungibile
+wait_for_broker('kafka', 9093)
 
 consumer = KafkaConsumer(
     TOPIC,
