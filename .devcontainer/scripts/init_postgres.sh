@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -xe
 
 echo "--- Inizio script di inizializzazione per PostGIS ---"
 echo "Working directory: $(pwd)"
@@ -8,12 +8,21 @@ ls -l
 
 echo "Attesa che Postgres con PostGIS sia pronto..."
 
-# Esporta la password per le connessioni 
+# Imposta la password per psql in modo non interattivo
 export PGPASSWORD=nearypass
 
-until psql -h postgres-postgis -U nearuser -d near_you_shops -c "SELECT 1" >/dev/null 2>&1; do
-    echo "Postgres non è ancora pronto, attendo 10 secondi..."
+COUNTER=0
+MAX_RETRIES=30
+
+while true; do
+    output=$(psql -h postgres-postgis -U nearuser -d near_you_shops -c "SELECT 1" 2>&1) && break
+    echo "Tentativo $(($COUNTER+1)): psql non è ancora riuscito. Errore: $output"
     sleep 10
+    COUNTER=$(($COUNTER+1))
+    if [ $COUNTER -ge $MAX_RETRIES ]; then
+         echo "Limite massimo di tentativi raggiunto. Uscita."
+         exit 1
+    fi
 done
 
 echo "Postgres è pronto. Procedo con la creazione della tabella shops..."
