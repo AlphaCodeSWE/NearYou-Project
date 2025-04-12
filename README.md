@@ -24,6 +24,7 @@ NearYou-Project/
 ├── src/
 │   ├── producer.py              # Producer Kafka
 │   └── consumer.py              # Consumer Kafka e ClickHouse
+|   └── generate_users.py        # Genero degli utenti attraverso Faker
 ├── requirements.txt             # Dipendenze Python
 └── README.md                    # Questo file
 ```
