@@ -134,31 +134,27 @@ services:
       - clickhouse
     restart: "no"
 
-
   postgres:
     image: postgis/postgis:15-3.3
     container_name: postgres-postgis
     environment:
-     - POSTGRES_USER=nearuser
-     - POSTGRES_PASSWORD=nearypass
+      - POSTGRES_USER=nearuser
+      - POSTGRES_PASSWORD=nearypass
       - POSTGRES_DB=near_you_shops
     volumes:
-     - postgres_data:/var/lib/postgresql/data
-     - ./scripts:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
   init_postgres:
-   image: postgis/postgis:15-3.3
-   container_name: init-postgres
-   depends_on:
-     - postgres
-   volumes:
-     - ./scripts/init_postgres.sh:/docker-entrypoint-initdb.d/init_postgres.sh
-   command: ["bash", "-c", "chmod +x /docker-entrypoint-initdb.d/init_postgres.sh && /docker-entrypoint-initdb.d/init_postgres.sh"]
-   restart: "no"
-
-
+    image: postgis/postgis:15-3.3
+    container_name: init-postgres
+    depends_on:
+      - postgres
+    volumes:
+      - ./scripts/init_postgres.sh:/docker-entrypoint-initdb.d/init_postgres.sh
+    command: ["bash", "-c", "chmod +x /docker-entrypoint-initdb.d/init_postgres.sh && /docker-entrypoint-initdb.d/init_postgres.sh"]
+    restart: "no"
 
 volumes:
   kafka_data:
