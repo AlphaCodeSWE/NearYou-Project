@@ -1,3 +1,4 @@
 kafka-python
 clickhouse-driver
 Faker
+psycopg2-binary
