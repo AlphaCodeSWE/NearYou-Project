@@ -122,7 +122,8 @@ docker-compose -f .devcontainer/docker-compose.yml exec consumer ls -la /workspa
 - Il producer genera e invia dati a Kafka, non interagisce direttamente con ClickHouse.
 - Il consumer gestisce l’inserimento dati in ClickHouse e crea automaticamente la tabella se non presente.
 - Mutual TLS è configurato per sicurezza delle comunicazioni tra Kafka e client.
+- Avviare gitpod: https://gitpod.io/#https://github.com/AlphaCodeSWE/NearYou-Project
 
-Per qualsiasi dubbio o ulteriore necessità consultare questo file o contattare il team di sviluppo.
+Per qualsiasi dubbio o ulteriore necessità consultare questo file o contattare il team di sviluppo: alphacodeswe@gmail.com
 
 
