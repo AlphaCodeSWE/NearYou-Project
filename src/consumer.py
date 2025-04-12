@@ -5,8 +5,9 @@ import time
 import socket
 from kafka import KafkaConsumer
 from clickhouse_driver import Client
+from clickhouse_driver.errors import ServerException
 
-# Conf
+# Configurazioni Kafka
 BROKER = 'kafka:9093'
 TOPIC = 'gps_stream'
 CONSUMER_GROUP = 'gps_consumers_group'
@@ -17,7 +18,6 @@ SSL_CERTFILE = '/workspace/certs/client_cert.pem'
 SSL_KEYFILE  = '/workspace/certs/client_key.pem'
 
 def wait_for_broker(host, port, timeout=2):
-    """Attende finché il broker non risponde sulla porta specificata."""
     while True:
         try:
             with socket.create_connection((host, port), timeout):
@@ -27,9 +27,10 @@ def wait_for_broker(host, port, timeout=2):
             print(f"Attendo broker {host}:{port}... {e}")
             time.sleep(2)
 
-# Attendi che il broker Kafka sia raggiungibile
+# Attende che il broker Kafka sia raggiungibile
 wait_for_broker('kafka', 9093)
 
+# Inizializza il KafkaConsumer con mutual TLS
 consumer = KafkaConsumer(
     TOPIC,
     bootstrap_servers=[BROKER],
@@ -43,20 +44,46 @@ consumer = KafkaConsumer(
     value_deserializer=lambda m: json.loads(m.decode('utf-8'))
 )
 
+# Connessione a ClickHouse
 client = Client(
     host='clickhouse-server',
     user='default',
     password='pwe@123@l@',
     port=9000,
-    database='nearyou'
+    database='nearyou'  # faccio un controllo succ per vedere se esiste
 )
+
+def wait_for_database(db_name, timeout=2, max_retries=30):
+    """Attende che il database 'db_name' esista in ClickHouse."""
+    retries = 0
+    while retries < max_retries:
+        try:
+            databases = client.execute("SHOW DATABASES")
+            databases_list = [db[0] for db in databases]
+            if db_name in databases_list:
+                print(f"Database '{db_name}' trovato.")
+                return True
+            else:
+                print(f"Database '{db_name}' non ancora disponibile. Riprovo...")
+        except Exception as e:
+            print(f"Errore durante la verifica del database: {e}")
+        time.sleep(timeout)
+        retries += 1
+    raise Exception(f"Il database '{db_name}' non è stato trovato dopo {max_retries} tentativi.")
+
+# Attendi che il database 'nearyou' sia disponibile
+wait_for_database('nearyou')
 
 def generate_event_id():
     return random.randint(1000000000, 9999999999)
 
 def create_table_if_not_exists():
-    tables = client.execute("SHOW TABLES")
-    tables_list = [t[0] for t in tables]
+    try:
+        tables = client.execute("SHOW TABLES")
+        tables_list = [t[0] for t in tables]
+    except ServerException as e:
+        print("Errore nel recuperare le tabelle:", e)
+        tables_list = []
     if "user_events" not in tables_list:
         print("La tabella 'user_events' non esiste. Creandola...")
         client.execute('''
