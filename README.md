@@ -34,6 +34,17 @@ NearYou-Project/
 - **Producer**: genera dati GPS simulati con timestamp in formato ISO-8601 e li invia a Kafka utilizzando Mutual TLS.
 - **Consumer**: riceve i dati da Kafka, verifica l’esistenza del database ClickHouse e della tabella necessaria, quindi inserisce i dati nel database.
 
+## Grafana
+- Attraverso il link presente su ports (3000) apro il browser che linka alla dashboard o https://<workspace-id>-3000.gitpod.io
+- Per configurarla si accede con dati di default (admin/admin), nel nostro caso abbiamo cambaito la pw
+- Si aggiunge un nuovo **Data Source** , clickhouse non c'è di deafult e quindi sul docker-compose.yml serve l'inclusione di GF_INSTALL_PLUGINS=vertamedia-clickhouse-datasource .
+- Per instaurare la connessione :
+   - Server Address: clickhouse-server
+   - Server Port: 9000
+   - Database: nearyou
+   - Username e password: quelli inseriti in configrazione su yml.
+   - Save & Test
+
 ## Configurazione Iniziale
 
 ### Avviare Ambiente Docker Compose
