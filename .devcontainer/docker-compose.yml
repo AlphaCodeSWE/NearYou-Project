@@ -135,7 +135,23 @@ services:
     restart: "no"
 
 
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: postgres-postgis
+    environment:
+      - POSTGRES_USER=nearuser
+      - POSTGRES_PASSWORD=nearypass
+      - POSTGRES_DB=near_you_shops
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_postgres.sh:/docker-entrypoint-initdb.d/init_postgres.sh:ro
+    ports:
+      - "5432:5432"
+
+
+
 volumes:
   kafka_data:
   clickhouse_data:
   grafana_data:
+  postgres_data:
