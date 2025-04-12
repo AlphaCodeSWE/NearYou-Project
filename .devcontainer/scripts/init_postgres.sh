@@ -6,9 +6,13 @@ echo "Working directory: $(pwd)"
 echo "Elenco dei file nella directory:"
 ls -l
 
+# Attesa iniziale per dare tempo a Postgres di configurarsi
+echo "Attesa iniziale di 30 secondi per il setup di Postgres..."
+sleep 30
+
 echo "Attesa che Postgres con PostGIS sia pronto..."
 
-# Esporta la password per le connessioni non interattive
+# Esporta la password per psql
 export PGPASSWORD=nearypass
 
 COUNTER=0
