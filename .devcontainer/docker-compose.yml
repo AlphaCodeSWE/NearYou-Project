@@ -144,19 +144,17 @@ services:
       - POSTGRES_DB=near_you_shops
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # Montiamo anche la directory degli script per eventuali usi
-      - ./scripts:/docker-entrypoint-initdb.d:ro
+      - ./scripts:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
 
-  # forzo l'esecuzione in ordine
   init_postgres:
     image: postgis/postgis:15-3.3
     container_name: init-postgres
     depends_on:
       - postgres
     volumes:
-      - ./scripts/init_postgres.sh:/docker-entrypoint-initdb.d/init_postgres.sh:ro
+      - ./scripts/init_postgres.sh:/docker-entrypoint-initdb.d/init_postgres.sh
     command: ["bash", "-c", "chmod +x /docker-entrypoint-initdb.d/init_postgres.sh && /docker-entrypoint-initdb.d/init_postgres.sh"]
     restart: "no"
 
