@@ -116,7 +116,10 @@ Per verificare la presenza dei certificati nei container:
 ```bash
 docker-compose -f .devcontainer/docker-compose.yml exec consumer ls -la /workspace/certs
 ```
-
+## Riavvio completo 
+```bash
+docker-compose -f .devcontainer/docker-compose.yml restart
+```
 ## Note Aggiuntive
 
 - Il producer genera e invia dati a Kafka, non interagisce direttamente con ClickHouse.
