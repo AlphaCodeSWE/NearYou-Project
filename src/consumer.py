@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import json
 import random
-import time
 import socket
+import time
+from datetime import datetime
 from kafka import KafkaConsumer
 from clickhouse_driver import Client
 from clickhouse_driver.errors import ServerException
@@ -18,6 +19,7 @@ SSL_CERTFILE = '/workspace/certs/client_cert.pem'
 SSL_KEYFILE  = '/workspace/certs/client_key.pem'
 
 def wait_for_broker(host, port, timeout=2):
+    """Attende che il broker Kafka sia raggiungibile sulla porta indicata."""
     while True:
         try:
             with socket.create_connection((host, port), timeout):
@@ -25,12 +27,11 @@ def wait_for_broker(host, port, timeout=2):
                 return
         except Exception as e:
             print(f"Attendo broker {host}:{port}... {e}")
-            time.sleep(2)
+            time.sleep(timeout)
 
-# Attende che il broker Kafka sia raggiungibile
+# Attendi che il broker Kafka sia disponibile
 wait_for_broker('kafka', 9093)
 
-# Inizializza il KafkaConsumer con mutual TLS
 consumer = KafkaConsumer(
     TOPIC,
     bootstrap_servers=[BROKER],
@@ -44,17 +45,16 @@ consumer = KafkaConsumer(
     value_deserializer=lambda m: json.loads(m.decode('utf-8'))
 )
 
-# Connessione a ClickHouse
 client = Client(
     host='clickhouse-server',
     user='default',
     password='pwe@123@l@',
     port=9000,
-    database='nearyou'  # faccio un controllo succ per vedere se esiste
+    database='nearyou'
 )
 
 def wait_for_database(db_name, timeout=2, max_retries=30):
-    """Attende che il database 'db_name' esista in ClickHouse."""
+    """Attende finché il database 'db_name' esiste in ClickHouse."""
     retries = 0
     while retries < max_retries:
         try:
@@ -66,13 +66,13 @@ def wait_for_database(db_name, timeout=2, max_retries=30):
             else:
                 print(f"Database '{db_name}' non ancora disponibile. Riprovo...")
         except Exception as e:
-            print(f"Errore durante la verifica del database: {e}")
+            print(f"Errore nella verifica del database: {e}")
         time.sleep(timeout)
         retries += 1
     raise Exception(f"Il database '{db_name}' non è stato trovato dopo {max_retries} tentativi.")
 
-# Attendi che il database 'nearyou' sia disponibile
-wait_for_database('nearyou')
+# Attendi che il database "nearyou" sia disponibile
+wait_for_database("nearyou", timeout=2, max_retries=30)
 
 def generate_event_id():
     return random.randint(1000000000, 9999999999)
@@ -107,9 +107,17 @@ create_table_if_not_exists()
 print("Consumer in ascolto sul topic:", TOPIC)
 for message in consumer:
     data = message.value
+    try:
+        # Converte la stringa ISO-8601 in un oggetto datetime.
+        # Il producer ha serializzato il datetime in formato ISO-8601 (es. "2025-04-11T15:26:16+00:00")
+        timestamp_dt = datetime.fromisoformat(data['timestamp'])
+    except Exception as e:
+        print(f"Errore nella conversione del timestamp: {data['timestamp']} -> {e}")
+        continue  # Salta il messaggio se la conversione fallisce
+
     event = (
         generate_event_id(),    # event_id
-        data['timestamp'],      # event_time
+        timestamp_dt,           # event_time come oggetto datetime
         data['user_id'],
         data['latitude'],
         data['longitude'],
