@@ -1,4 +1,4 @@
-# NearYou - Smart Custom Advertising Platform
+# NearYou 
 
 Questa repository contiene il codice e la configurazione necessari per eseguire una piattaforma di advertising personalizzata basata su flussi dati GPS inviati a Kafka e archiviati in ClickHouse. Il progetto utilizza comunicazione sicura tramite Mutual TLS.
 
