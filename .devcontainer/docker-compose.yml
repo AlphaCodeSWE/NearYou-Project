@@ -65,6 +65,8 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    environment:
+      - GF_INSTALL_PLUGINS=vertamedia-clickhouse-datasource
     depends_on:
       - clickhouse
     volumes:
