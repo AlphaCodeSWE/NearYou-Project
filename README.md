@@ -34,7 +34,7 @@ NearYou-Project/
 - **Producer**: genera dati GPS simulati con timestamp in formato ISO-8601 e li invia a Kafka utilizzando Mutual TLS.
 - **Consumer**: riceve i dati da Kafka, verifica l’esistenza del database ClickHouse e della tabella necessaria, quindi inserisce i dati nel database.
 
-## Grafana
+## Grafana Dashboard
 - Attraverso il link presente su ports (3000) apro il browser che linka alla dashboard o https://<workspace-id>-3000.gitpod.io
 - Per configurarla si accede con dati di default (admin/admin), nel nostro caso abbiamo cambaito la pw
 - Si aggiunge un nuovo **Data Source** , clickhouse non c'è di deafult e quindi sul docker-compose.yml serve l'inclusione di GF_INSTALL_PLUGINS=vertamedia-clickhouse-datasource .
@@ -44,6 +44,12 @@ NearYou-Project/
    - Database: nearyou
    - Username e password: quelli inseriti in configrazione su yml.
    - Save & Test
+##  ClickHouse:
+- E' progettato per analisi ad alte prestazioni su grandi volumi di dati in streaming (OLAP), perfetto per gestire i dati dinamici in tempo reale come quelli provenienti dai simulatori o dai sensori.
+- Contiene: users, user_event
+## PostgreSQL con PostGIS
+- E' ottimizzato per gestire dati statici e relazionali con capacità spaziali avanzate, ideali per memorizzare informazioni sui negozi e eseguire query geospaziali (ad esempio, per verificare la vicinanza degli esercizi commerciali agli utenti).
+- All'interno troviamo i punti commerciali
 
 ## Configurazione Iniziale
 
