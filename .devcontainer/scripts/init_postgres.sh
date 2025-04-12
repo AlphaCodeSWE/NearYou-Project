@@ -8,6 +8,9 @@ ls -l
 
 echo "Attesa che Postgres con PostGIS sia pronto..."
 
+# Esporta la password per le connessioni 
+export PGPASSWORD=nearypass
+
 until psql -h postgres-postgis -U nearuser -d near_you_shops -c "SELECT 1" >/dev/null 2>&1; do
     echo "Postgres non è ancora pronto, attendo 10 secondi..."
     sleep 10
