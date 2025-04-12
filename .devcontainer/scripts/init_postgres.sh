@@ -8,26 +8,26 @@ ls -l
 
 echo "Attesa che Postgres con PostGIS sia pronto..."
 
-# Imposta la password per psql in modo non interattivo
+# Imposta la password per psql
 export PGPASSWORD=nearypass
 
 COUNTER=0
 MAX_RETRIES=30
 
 while true; do
-    output=$(psql -h postgres-postgis -U nearuser -d near_you_shops -c "SELECT 1" 2>&1) && break
+    output=$(psql -h postgres -U nearuser -d near_you_shops -c "SELECT 1" 2>&1) && break
     echo "Tentativo $(($COUNTER+1)): psql non è ancora riuscito. Errore: $output"
     sleep 10
     COUNTER=$(($COUNTER+1))
     if [ $COUNTER -ge $MAX_RETRIES ]; then
-         echo "Limite massimo di tentativi raggiunto. Uscita."
-         exit 1
+        echo "Limite massimo di tentativi raggiunto. Uscita."
+        exit 1
     fi
 done
 
 echo "Postgres è pronto. Procedo con la creazione della tabella shops..."
 
-psql -h postgres-postgis -U nearuser -d near_you_shops <<'EOF'
+psql -h postgres -U nearuser -d near_you_shops <<'EOF'
 CREATE TABLE IF NOT EXISTS shops (
     shop_id SERIAL PRIMARY KEY,
     shop_name VARCHAR(255),
