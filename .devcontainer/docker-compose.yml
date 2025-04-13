@@ -186,7 +186,7 @@ services:
     image: redis:latest
     restart: unless-stopped
 
-  airflow-webserver:
+    airflow-webserver:
     image: apache/airflow:2.5.0
     depends_on:
       - airflow-postgres
@@ -197,10 +197,11 @@ services:
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CORE__FERNET_KEY=uZ8CGq56QQcjCUGqj-ESyppA95968on1VGu1PTTPw30=
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW_HOME=/opt/airflow
     volumes:
-      - ../airflow/dags:/opt/airflow/dags
+      - ../airflow:/opt/airflow   
     ports:
-      - "8082:8082"
+      - "8082:8080"   
     command: webserver
     restart: unless-stopped
 
@@ -214,8 +215,9 @@ services:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW_HOME=/opt/airflow
     volumes:
-      - ../airflow/dags:/opt/airflow/dags
+      - ../airflow:/opt/airflow
     command: scheduler
     restart: unless-stopped
 
@@ -229,10 +231,12 @@ services:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW_HOME=/opt/airflow
     volumes:
-      - ../airflow/dags:/opt/airflow/dags
+      - ../airflow:/opt/airflow
     command: celery worker
     restart: unless-stopped
+
 
   
 
