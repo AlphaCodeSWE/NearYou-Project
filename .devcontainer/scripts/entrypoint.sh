@@ -17,10 +17,21 @@ else
 fi
 
 echo "Inizializzazione e upgrade del database..."
-# Esegue airflow db init e in ogni caso esegue l'upgrade per applicare tutte le migrazioni mancanti,
+# Esegue airflow db init e in ogni caso l'upgrade per applicare tutte le migrazioni mancanti,
 # così che anche la tabella "log" venga creata.
 su airflow -c "airflow db init" || true
 su airflow -c "airflow db upgrade"
+
+echo "Creazione automatica dell'utenza Airflow..."
+# Tenta di creare l'utente admin.
+# Se l'utente esiste già, il comando potrebbe fallire, quindi usiamo "||" per stampare un messaggio.
+su airflow -c "airflow users create \
+  --username admin \
+  --firstname Admin \
+  --lastname User \
+  --role Admin \
+  --email admin@example.com \
+  --password admin" || echo "Utente admin già esistente o non creato."
 
 echo "Avvio di Airflow Scheduler come utente 'airflow'..."
 exec su airflow -c "airflow scheduler"
