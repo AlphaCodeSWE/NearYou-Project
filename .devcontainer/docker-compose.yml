@@ -19,7 +19,6 @@ services:
       - "2181:2181"
 
   #--- CONFIGURAZIONE KAFKA CON SSL ---
-
   kafka:
     image: bitnami/kafka:3.4
     env_file:
@@ -52,7 +51,6 @@ services:
       - zookeeper
 
   # ---- CONFIGURAZIONE HIVEMQ ---
-
   hivemq:
     image: hivemq/hivemq-ce:latest
     ports:
@@ -60,7 +58,6 @@ services:
       - "8080:8080"
 
   # --- CONFIGURAZIONE NIFI ---
-
   nifi:
     image: apache/nifi:latest
     environment:
@@ -69,7 +66,6 @@ services:
       - "8081:8081"
 
   # --- CONFIGURAZIONE GRAFANA (DASHBOARD) ---
-
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -82,9 +78,7 @@ services:
     ports:
       - "3000:3000"
 
-
   # --- CONFIGURAZIONE CLICKHOUSE, db per Users, User_event ---
-
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: clickhouse-server
@@ -109,8 +103,7 @@ services:
       - clickhouse
     restart: "no"
 
-  # --- Porducer , Consumer , Generatore di utenti ---
-
+  # --- PRODUCER, CONSUMER, GENERATORE DI UTENTI ---
   producer:
     build:
       context: ..
@@ -135,7 +128,7 @@ services:
       - kafka
       - clickhouse
     restart: "no"
-  
+
   generate_users:
     build:
       context: ..
@@ -148,7 +141,6 @@ services:
     restart: "no"
 
   # --- CONFIGURAZIONE POSTGRES db per : dati esercizi commerciali, near_you_shops :
-
   postgres:
     image: postgis/postgis:15-3.3
     container_name: postgres-postgis
@@ -171,7 +163,7 @@ services:
     command: ["bash", "-c", "chmod +x /docker-entrypoint-initdb.d/init_postgres.sh && /docker-entrypoint-initdb.d/init_postgres.sh"]
     restart: "no"
 
-  # ---- CONFIGURAZIONE DI ARIFLOW, brocker collegato ad un API per estrarre i dati degli es commerciali ----
+  # ---- CONFIGURAZIONE DI AIRFLOW, brocker collegato ad un API per estrarre i dati degli es commerciali ----
   airflow-postgres:
     image: postgres:13
     environment:
@@ -186,7 +178,7 @@ services:
     image: redis:latest
     restart: unless-stopped
 
-    airflow-webserver:
+  airflow-webserver:
     image: apache/airflow:2.5.0
     depends_on:
       - airflow-postgres
@@ -199,9 +191,9 @@ services:
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AIRFLOW_HOME=/opt/airflow
     volumes:
-      - ../airflow:/opt/airflow   
+      - ../airflow:/opt/airflow
     ports:
-      - "8082:8080"   
+      - "8082:8080"
     command: webserver
     restart: unless-stopped
 
@@ -236,9 +228,6 @@ services:
       - ../airflow:/opt/airflow
     command: celery worker
     restart: unless-stopped
-
-
-  
 
 volumes:
   kafka_data:
