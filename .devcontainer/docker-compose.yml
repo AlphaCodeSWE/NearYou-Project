@@ -200,7 +200,7 @@ services:
     volumes:
       - ../airflow/dags:/opt/airflow/dags
     ports:
-      - "8080:8080"
+      - "8081:8081"
     command: webserver
     restart: unless-stopped
 
