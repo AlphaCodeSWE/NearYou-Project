@@ -222,7 +222,7 @@ services:
       - airflow_data:/opt/airflow_home
     security_opt:
       - seccomp:unconfined
-    command: ["/bin/bash", "-c", "chmod -R 777 /opt/airflow_home || true; exec airflow scheduler"]
+    command: ["/bin/bash", "-c", "chown -R airflow:airflow /opt/airflow_home && chmod -R 777 /opt/airflow_home || true; exec airflow scheduler"]
     restart: unless-stopped
 
   airflow-worker:
