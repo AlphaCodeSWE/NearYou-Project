@@ -13,7 +13,7 @@ default_args = {
 }
 
 def extract_data(**kwargs):
-    # Estraggo i dati su Milano
+    # Estraggo i dati su Milano (esercizi commerciali)
     overpass_query = """
     [out:json][timeout:25];
     area["name"="Milano"]->.searchArea;
