@@ -182,9 +182,9 @@ services:
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CORE__FERNET_KEY=uZ8CGq56QQcjCUGqj-ESyppA95968on1VGu1PTTPw30=
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW_HOME=/opt/airflow
+      - AIRFLOW_HOME=/opt/airflow_home
     volumes:
-      - airflow_data:/opt/airflow
+      - airflow_data:/opt/airflow_home
       - ./scripts/entrypoint.sh:/entrypoint.sh
     ports:
       - "8082:8080"
@@ -203,9 +203,9 @@ services:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
-      - AIRFLOW_HOME=/opt/airflow
+      - AIRFLOW_HOME=/opt/airflow_home
     volumes:
-      - airflow_data:/opt/airflow
+      - airflow_data:/opt/airflow_home
       - ./scripts/entrypoint.sh:/entrypoint.sh
     entrypoint: ["bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
     command: scheduler
@@ -222,9 +222,9 @@ services:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
-      - AIRFLOW_HOME=/opt/airflow
+      - AIRFLOW_HOME=/opt/airflow_home
     volumes:
-      - airflow_data:/opt/airflow
+      - airflow_data:/opt/airflow_home
       - ./scripts/entrypoint.sh:/entrypoint.sh
     entrypoint: ["bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
     command: celery worker
