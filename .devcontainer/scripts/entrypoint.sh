@@ -2,10 +2,11 @@
 set -e
 
 echo "Controllo inizializzazione del database..."
-if ! airflow db check > /dev/null 2>&1; then
-    echo "Il database non è inizializzato: eseguo 'airflow db init' e 'airflow db upgrade'..."
-    airflow db init
-    airflow db upgrade
+# Eseguiamo i comandi airflow come utente airflow
+if ! su airflow -c "airflow db check" > /dev/null 2>&1; then
+    echo "Database non inizializzato: eseguo 'airflow db init' e 'airflow db upgrade'..."
+    su airflow -c "airflow db init"
+    su airflow -c "airflow db upgrade"
 else
     echo "Il database è già inizializzato."
 fi
