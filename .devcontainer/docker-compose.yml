@@ -237,7 +237,7 @@ services:
       - airflow-init
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/0
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW_HOME=/opt/airflow_home
     volumes:
