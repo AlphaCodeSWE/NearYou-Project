@@ -199,8 +199,13 @@ services:
       - "8082:8082"
     security_opt:
       - seccomp:unconfined
+    volumes:
+      - airflow_data:/opt/airflow_home
+      - ./scripts/entrypoint.sh:/entrypoint.sh
+    entrypoint: ["/entrypoint.sh"]
     command: ["webserver", "-p", "8082"]
     restart: unless-stopped
+
 
   airflow-scheduler:
     image: apache/airflow:2.5.0
@@ -219,9 +224,10 @@ services:
       - ./scripts/entrypoint.sh:/entrypoint.sh
     security_opt:
       - seccomp:unconfined
-    entrypoint: ["/bin/bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
+    entrypoint: ["/entrypoint.sh"]
     command: ["scheduler"]
     restart: unless-stopped
+
 
 
   airflow-worker:
