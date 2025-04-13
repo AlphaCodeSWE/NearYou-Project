@@ -122,7 +122,7 @@ services:
       - kafka
       - clickhouse
     restart: "no"
-  
+
   generate_users:
     build:
       context: ..
@@ -186,9 +186,11 @@ services:
       - AIRFLOW__WEBSERVER__WEB_SERVER_PORT=8082
     volumes:
       - airflow_data:/opt/airflow_home
+      - ./scripts/entrypoint.sh:/entrypoint.sh
     ports:
       - "8082:8082"
-    command: bash -c "airflow db init && exec airflow webserver -p 8082"
+    entrypoint: "/entrypoint.sh"
+    command: "webserver -p 8082"
     restart: unless-stopped
 
   airflow-scheduler:
@@ -210,7 +212,6 @@ services:
     command: "scheduler"
     restart: unless-stopped
 
-
   airflow-worker:
     image: apache/airflow:2.5.0
     depends_on:
@@ -226,8 +227,8 @@ services:
     volumes:
       - airflow_data:/opt/airflow_home
       - ./scripts/entrypoint.sh:/entrypoint.sh
-    entrypoint: ["bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
-    command: celery worker
+    entrypoint: "/entrypoint.sh"
+    command: "celery worker"
     restart: unless-stopped
 
 volumes:
