@@ -6,4 +6,5 @@ if [ ! -f "$AIRFLOW_HOME/airflow.cfg" ]; then
   airflow db init
 fi
 
-exec airflow "$@"
+# Richiamo dell'entrypoint ufficiale per configurare l'ambiente di Airflow
+exec /entrypoint "$@"
