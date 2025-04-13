@@ -24,5 +24,15 @@ su airflow -c "airflow db upgrade"
 echo "Attivo automaticamente il DAG etl_shops..."
 su airflow -c "airflow dags unpause etl_shops" || echo "DAG etl_shops già attivo o errore nell'unpause."
 
+echo "Creazione automatica dell'utenza Airflow..."
+# Tenta di creare l'utente admin; se già esistente, il comando fallirà e verrà stampato un messaggio.
+su airflow -c "airflow users create \
+  --username admin \
+  --firstname Admin \
+  --lastname User \
+  --role Admin \
+  --email admin@example.com \
+  --password admin" || echo "Utente admin già esistente o errore nella creazione."
+
 echo "Avvio di Airflow Scheduler come utente 'airflow'..."
 exec su airflow -c "airflow scheduler"
