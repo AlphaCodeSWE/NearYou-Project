@@ -226,7 +226,6 @@ services:
     command: ["/bin/bash", "/entrypoint.sh"]
     restart: unless-stopped
 
-
   airflow-worker:
     image: apache/airflow:2.5.0
     depends_on:
