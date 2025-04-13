@@ -224,8 +224,9 @@ services:
       - ./.devcontainer/scripts/entrypoint.sh:/entrypoint.sh:ro
     security_opt:
       - seccomp:unconfined
-    command: ["/bin/bash", "/entrypoint.sh"]
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
     restart: unless-stopped
+
 
 
   airflow-worker:
