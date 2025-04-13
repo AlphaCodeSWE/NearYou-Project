@@ -18,6 +18,7 @@ services:
     ports:
       - "2181:2181"
 
+  #--- CONFIGURAZIONE KAFKA CON SSL ---
   kafka:
     image: bitnami/kafka:3.4
     env_file:
@@ -49,12 +50,14 @@ services:
     depends_on:
       - zookeeper
 
+  # ---- CONFIGURAZIONE HIVEMQ ---
   hivemq:
     image: hivemq/hivemq-ce:latest
     ports:
       - "1883:1883"
       - "8080:8080"
 
+  # --- CONFIGURAZIONE NIFI ---
   nifi:
     image: apache/nifi:latest
     environment:
@@ -62,6 +65,7 @@ services:
     ports:
       - "8081:8081"
 
+  # --- CONFIGURAZIONE GRAFANA (DASHBOARD) ---
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -74,6 +78,7 @@ services:
     ports:
       - "3000:3000"
 
+  # --- CONFIGURAZIONE CLICKHOUSE, db per Users, User_event ---
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: clickhouse-server
@@ -98,6 +103,7 @@ services:
       - clickhouse
     restart: "no"
 
+  # --- PRODUCER, CONSUMER, GENERATORE DI UTENTI ---
   producer:
     build:
       context: ..
@@ -134,6 +140,7 @@ services:
       - clickhouse
     restart: "no"
 
+  # --- CONFIGURAZIONE POSTGRES db per : dati esercizi commerciali, near_you_shops :
   postgres:
     image: postgis/postgis:15-3.3
     container_name: postgres-postgis
@@ -156,6 +163,7 @@ services:
     command: ["bash", "-c", "chmod +x /docker-entrypoint-initdb.d/init_postgres.sh && /docker-entrypoint-initdb.d/init_postgres.sh"]
     restart: "no"
 
+  # ---- CONFIGURAZIONE DI AIRFLOW, brocker collegato ad un API per estrarre i dati degli es commerciali ----
   airflow-postgres:
     image: postgres:13
     environment:
@@ -184,7 +192,7 @@ services:
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AIRFLOW_HOME=/opt/airflow
     volumes:
-      - ../airflow:/opt/airflow
+      - airflow_data:/opt/airflow
     ports:
       - "8082:8080"
     command: webserver
@@ -203,7 +211,7 @@ services:
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW_HOME=/opt/airflow
     volumes:
-      - ../airflow:/opt/airflow
+      - airflow_data:/opt/airflow
     command: scheduler
     restart: unless-stopped
 
@@ -220,7 +228,7 @@ services:
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW_HOME=/opt/airflow
     volumes:
-      - ../airflow:/opt/airflow
+      - airflow_data:/opt/airflow
     command: celery worker
     restart: unless-stopped
 
@@ -230,3 +238,4 @@ volumes:
   grafana_data:
   postgres_data:
   airflow_pgdata:
+  airflow_data:
