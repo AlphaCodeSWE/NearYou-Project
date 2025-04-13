@@ -1,62 +1,44 @@
 #!/bin/bash
-set -e
+set -xe
 
-echo "--- Inizio script di inizializzazione ---"
+echo "--- Inizio script di inizializzazione per PostGIS ---"
 echo "Working directory: $(pwd)"
 echo "Elenco dei file nella directory:"
 ls -l
 
-echo "Attesa che ClickHouse sia pronto..."
+echo "Attesa iniziale di 60 secondi per il setup di Postgres..."
+sleep 60
 
-until docker exec -i clickhouse-server clickhouse-client --query "SELECT 1" >/dev/null 2>&1; do
-    echo "ClickHouse non è ancora pronto, attendo 5 secondi..."
-    sleep 5
+echo "Attesa che Postgres con PostGIS sia pronto..."
+
+# Imposta la password per psql
+export PGPASSWORD=nearypass
+
+COUNTER=0
+MAX_RETRIES=40
+
+while true; do
+    output=$(psql -h postgres -U nearuser -d near_you_shops -c "SELECT 1" 2>&1) && break
+    echo "Tentativo $(($COUNTER+1)): psql non è ancora riuscito. Errore: $output"
+    sleep 15
+    COUNTER=$(($COUNTER+1))
+    if [ $COUNTER -ge $MAX_RETRIES ]; then
+         echo "Limite massimo di tentativi raggiunto. Uscita."
+         exit 1
+    fi
 done
 
-echo "ClickHouse è pronto. Procedo con la creazione."
+echo "Postgres è pronto. Procedo con la creazione della tabella shops..."
 
-# Creazione del database se non esiste
-echo "Creazione del database 'nearyou' (se non esiste già)..."
-docker exec -i clickhouse-server clickhouse-client --query "CREATE DATABASE IF NOT EXISTS nearyou;"
+psql -h postgres -U nearuser -d near_you_shops <<'EOF'
+CREATE TABLE IF NOT EXISTS shops (
+    shop_id SERIAL PRIMARY KEY,
+    shop_name VARCHAR(255),
+    address TEXT,
+    category VARCHAR(100),
+    geom GEOMETRY(Point, 4326),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+EOF
 
-# Creazione della tabella users all'interno del database 'nearyou'
-echo "Creazione della tabella users..."
-docker exec -i clickhouse-server clickhouse-client --query "
-    USE nearyou;
-    CREATE TABLE IF NOT EXISTS users (
-        user_id           UInt64,
-        username          String,
-        full_name         String,
-        email             String,
-        phone_number      String,
-        password          String,
-        user_type         String,
-        gender            String,
-        age               UInt32,
-        profession        String,
-        interests         String,
-        country           String,
-        city              String,
-        registration_time DateTime
-    ) ENGINE = MergeTree()
-    ORDER BY user_id;
-"
-
-# Creazione della tabella user_events all'interno del database 'nearyou'
-echo "Creazione della tabella user_events..."
-docker exec -i clickhouse-server clickhouse-client --query "
-    USE nearyou;
-    CREATE TABLE IF NOT EXISTS user_events (
-        event_id   UInt64,
-        event_time DateTime,
-        user_id    UInt64,
-        latitude   Float64,
-        longitude  Float64,
-        poi_range  Float64,
-        poi_name   String,
-        poi_info   String
-    ) ENGINE = MergeTree()
-    ORDER BY event_id;
-"
-
-echo "Inizializzazione di ClickHouse completata."
+echo "Inizializzazione di PostGIS completata."
