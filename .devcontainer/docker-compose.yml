@@ -216,10 +216,13 @@ services:
       - AIRFLOW_HOME=/opt/airflow_home
     volumes:
       - airflow_data:/opt/airflow_home
+      - ./scripts/entrypoint.sh:/entrypoint.sh
     security_opt:
       - seccomp:unconfined
+    entrypoint: ["/bin/bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
     command: ["scheduler"]
     restart: unless-stopped
+
 
   airflow-worker:
     image: apache/airflow:2.5.0
