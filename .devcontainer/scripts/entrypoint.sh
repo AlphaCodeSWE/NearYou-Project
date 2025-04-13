@@ -2,7 +2,8 @@
 set -e
 
 echo "Inizio configurazione: imposto ownership e permessi su /opt/airflow_home..."
-if chown -R airflow:airflow /opt/airflow_home; then
+# Rimuoviamo la parte del gruppo per usare il gruppo primario dell'utente
+if chown -R airflow /opt/airflow_home; then
     echo "Ownership impostato correttamente."
 else
     echo "Errore nell'impostazione dell'ownership." >&2
