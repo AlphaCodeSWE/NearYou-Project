@@ -197,6 +197,7 @@ services:
       - AIRFLOW__WEBSERVER__WEB_SERVER_PORT=8082
     volumes:
       - airflow_data:/opt/airflow_home
+      - ./airflow/dags:/opt/airflow_home/dags:ro
     ports:
       - "8080:8080"
     security_opt:
@@ -220,6 +221,7 @@ services:
       - AIRFLOW_HOME=/opt/airflow_home
     volumes:
       - airflow_data:/opt/airflow_home
+      - ./airflow/dags:/opt/airflow_home/dags:ro
       - ./scripts/entrypoint.sh:/entrypoint.sh:ro
     security_opt:
       - seccomp:unconfined
