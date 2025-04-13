@@ -204,6 +204,28 @@ services:
       - seccomp:unconfined
     command: ["webserver", "-p", "8080"]
     restart: unless-stopped
+  
+  #CREO L'UTENZA ADMIN PER DASHBOARD---DA ELIMINARE DOPO
+  airflow-user:
+    image: apache/airflow:2.5.0
+    depends_on:
+      - airflow-webserver
+      - airflow-postgres
+      - airflow-redis
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/near_you_shops
+      - AIRFLOW_HOME=/opt/airflow_home
+    command: >
+      bash -c "airflow users create
+             --username admin
+             --firstname Admin
+             --lastname User
+             --role Admin
+             --email admin@example.com
+             --password admin"
+    restart: "no"
+
 
   airflow-scheduler:
     image: apache/airflow:2.5.0
