@@ -1,13 +1,6 @@
-#!/bin/bash
-set -e
-
-# Imposta i permessi di lettura, scrittura ed esecuzione per AIRFLOW_HOME
-chmod -R 777 "${AIRFLOW_HOME}"
-
-# Se non esiste il file di configurazione, inizializza il database Airflow
-if [ ! -f "${AIRFLOW_HOME}/airflow.cfg" ]; then
-  echo "airflow.cfg non trovato. Inizializzazione del database Airflow..."
-  airflow db init
-fi
-
-exec airflow "$@"
+#!/usr/bin/env bash
+echo "Imposto ownership e permessi su /opt/airflow_home..."
+chown -R airflow:airflow /opt/airflow_home
+chmod -R 777 /opt/airflow_home
+echo "Avvio di Airflow Scheduler come utente airflow..."
+exec su airflow -c 'exec airflow scheduler'
