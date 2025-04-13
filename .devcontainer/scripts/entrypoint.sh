@@ -16,14 +16,11 @@ else
     exit 1
 fi
 
-echo "Controllo inizializzazione del database..."
-if ! su airflow -c "airflow db check" > /dev/null 2>&1; then
-    echo "Il database non è inizializzato: eseguo 'airflow db init' e 'airflow db upgrade'..."
-    su airflow -c "airflow db init"
-    su airflow -c "airflow db upgrade"
-else
-    echo "Il database è già inizializzato."
-fi
+echo "Inizializzazione e upgrade del database..."
+# Esegue airflow db init e in ogni caso esegue l'upgrade per applicare tutte le migrazioni mancanti,
+# così che anche la tabella "log" venga creata.
+su airflow -c "airflow db init" || true
+su airflow -c "airflow db upgrade"
 
 echo "Avvio di Airflow Scheduler come utente 'airflow'..."
 exec su airflow -c "airflow scheduler"
