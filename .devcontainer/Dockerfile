@@ -17,5 +17,10 @@ COPY .devcontainer/scripts /workspace/.devcontainer/scripts
 # Imposta i permessi di esecuzione per lo script di inizializzazione
 RUN chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh
 
+
+COPY .devcontainer/scripts/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+
 # Mantieni il container in esecuzione (come default)
 CMD ["sleep", "infinity"]
