@@ -122,7 +122,7 @@ services:
       - kafka
       - clickhouse
     restart: "no"
-
+  
   generate_users:
     build:
       context: ..
