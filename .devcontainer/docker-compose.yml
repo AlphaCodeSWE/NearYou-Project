@@ -202,9 +202,16 @@ services:
     volumes:
       - airflow_data:/opt/airflow_home
       - ./scripts/entrypoint.sh:/entrypoint.sh
-    entrypoint: ["/entrypoint.sh"]
+    entrypoint: 
+      - /bin/bash
+      - -c
+      - |
+          cp /entrypoint.sh /tmp/entrypoint.sh && \
+          chmod +x /tmp/entrypoint.sh && \
+          exec /tmp/entrypoint.sh "$@"
     command: ["webserver", "-p", "8082"]
     restart: unless-stopped
+
 
 
   airflow-scheduler:
@@ -224,9 +231,16 @@ services:
       - ./scripts/entrypoint.sh:/entrypoint.sh
     security_opt:
       - seccomp:unconfined
-    entrypoint: ["/entrypoint.sh"]
+    entrypoint: 
+      - /bin/bash
+      - -c
+      - |
+          cp /entrypoint.sh /tmp/entrypoint.sh && \
+          chmod +x /tmp/entrypoint.sh && \
+          exec /tmp/entrypoint.sh "$@"
     command: ["scheduler"]
     restart: unless-stopped
+
 
 
 
