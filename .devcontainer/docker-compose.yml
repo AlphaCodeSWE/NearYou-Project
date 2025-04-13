@@ -206,9 +206,10 @@ services:
     volumes:
       - airflow_data:/opt/airflow_home
       - ./scripts/entrypoint.sh:/entrypoint.sh
-    entrypoint: ["bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
-    command: scheduler
+    entrypoint: "/entrypoint.sh"
+    command: "scheduler"
     restart: unless-stopped
+
 
   airflow-worker:
     image: apache/airflow:2.5.0
