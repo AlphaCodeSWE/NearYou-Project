@@ -209,6 +209,7 @@ services:
   airflow-scheduler:
     image: apache/airflow:2.5.0
     user: root
+    entrypoint: ""
     depends_on:
       - airflow-webserver
       - airflow-postgres
@@ -226,6 +227,7 @@ services:
       - seccomp:unconfined
     command: ["/bin/bash", "/entrypoint.sh"]
     restart: unless-stopped
+
 
 
 
