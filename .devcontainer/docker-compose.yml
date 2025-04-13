@@ -222,11 +222,12 @@ services:
       - AIRFLOW_HOME=/opt/airflow_home
     volumes:
       - airflow_data:/opt/airflow_home
-      - ./entrypoint.sh:/entrypoint.sh:ro
+      - ./scripts/entrypoint.sh:/entrypoint.sh:ro
     security_opt:
       - seccomp:unconfined
-    command: ["/bin/bash", "/entrypoint.sh"]
+    command: ["/bin/bash", "-c", "chmod +x /entrypoint.sh && /bin/bash /entrypoint.sh"]
     restart: unless-stopped
+
 
 
 
