@@ -221,10 +221,9 @@ services:
       - AIRFLOW_HOME=/opt/airflow_home
     volumes:
       - airflow_data:/opt/airflow_home
-      - ./.devcontainer/scripts/entrypoint.sh:/entrypoint.sh:ro
     security_opt:
       - seccomp:unconfined
-    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    command: ["/bin/bash", "-c", "chown -R airflow:airflow /opt/airflow_home && chmod -R 777 /opt/airflow_home && su airflow -c 'exec airflow scheduler'"]
     restart: unless-stopped
 
 

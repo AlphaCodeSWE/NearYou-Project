@@ -18,8 +18,6 @@ COPY .devcontainer/scripts /workspace/.devcontainer/scripts
 RUN chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh
 
 
-COPY .devcontainer/scripts/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
 
 # Mantieni il container in esecuzione (come default)
