@@ -185,11 +185,9 @@ services:
       - AIRFLOW_HOME=/opt/airflow_home
     volumes:
       - airflow_data:/opt/airflow_home
-      - ./scripts/entrypoint.sh:/entrypoint.sh
     ports:
       - "8082:8080"
-    entrypoint: ["bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
-    command: webserver
+    command: bash -c "airflow db init && exec airflow webserver"
     restart: unless-stopped
 
   airflow-scheduler:
