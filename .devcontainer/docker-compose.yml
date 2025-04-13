@@ -170,12 +170,23 @@ services:
     image: redis:latest
     restart: unless-stopped
 
+  airflow-init:
+    image: apache/airflow:2.5.0
+    depends_on:
+      - airflow-postgres
+      - airflow-redis
+    environment:
+      - AIRFLOW_HOME=/opt/airflow_home
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+    command: ["airflow", "db", "init"]
+    restart: "no"
+
   airflow-webserver:
     image: apache/airflow:2.5.0
     depends_on:
       - airflow-postgres
       - airflow-redis
-    user: root
+      - airflow-init
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
@@ -184,14 +195,10 @@ services:
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AIRFLOW_HOME=/opt/airflow_home
       - AIRFLOW__WEBSERVER__WEB_SERVER_PORT=8082
-    volumes:
-      - airflow_data:/opt/airflow_home
-      - ./scripts/entrypoint.sh:/entrypoint.sh
     ports:
       - "8082:8082"
     security_opt:
       - seccomp:unconfined
-    entrypoint: ["/bin/bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
     command: ["webserver", "-p", "8082"]
     restart: unless-stopped
 
@@ -201,7 +208,7 @@ services:
       - airflow-webserver
       - airflow-postgres
       - airflow-redis
-    user: root
+      - airflow-init
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
@@ -209,10 +216,8 @@ services:
       - AIRFLOW_HOME=/opt/airflow_home
     volumes:
       - airflow_data:/opt/airflow_home
-      - ./scripts/entrypoint.sh:/entrypoint.sh
     security_opt:
       - seccomp:unconfined
-    entrypoint: ["/bin/bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
     command: ["scheduler"]
     restart: unless-stopped
 
@@ -222,7 +227,7 @@ services:
       - airflow-scheduler
       - airflow-postgres
       - airflow-redis
-    user: root
+      - airflow-init
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
@@ -230,10 +235,8 @@ services:
       - AIRFLOW_HOME=/opt/airflow_home
     volumes:
       - airflow_data:/opt/airflow_home
-      - ./scripts/entrypoint.sh:/entrypoint.sh
     security_opt:
       - seccomp:unconfined
-    entrypoint: ["/bin/bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
     command: ["celery", "worker"]
     restart: unless-stopped
 
