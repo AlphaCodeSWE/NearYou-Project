@@ -122,7 +122,7 @@ services:
       - kafka
       - clickhouse
     restart: "no"
-  
+
   generate_users:
     build:
       context: ..
@@ -188,7 +188,7 @@ services:
       - ./scripts/entrypoint.sh:/entrypoint.sh
     ports:
       - "8082:8080"
-    entrypoint: ["/entrypoint.sh"]
+    entrypoint: ["bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
     command: webserver
     restart: unless-stopped
 
@@ -207,7 +207,7 @@ services:
     volumes:
       - airflow_data:/opt/airflow
       - ./scripts/entrypoint.sh:/entrypoint.sh
-    entrypoint: ["/entrypoint.sh"]
+    entrypoint: ["bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
     command: scheduler
     restart: unless-stopped
 
@@ -226,7 +226,7 @@ services:
     volumes:
       - airflow_data:/opt/airflow
       - ./scripts/entrypoint.sh:/entrypoint.sh
-    entrypoint: ["/entrypoint.sh"]
+    entrypoint: ["bash", "-c", "chmod +x /entrypoint.sh && exec /entrypoint.sh"]
     command: celery worker
     restart: unless-stopped
 
