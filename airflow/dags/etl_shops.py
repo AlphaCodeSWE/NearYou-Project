@@ -57,6 +57,7 @@ def transform_data(**kwargs):
 def load_data(**kwargs):
     ti = kwargs['ti']
     shops = ti.xcom_pull(task_ids='transform_data')
+    print("Dati da caricare:", shops)  # Debug
     conn = psycopg2.connect(
         dbname="near_you_shops",
         user="nearuser",
@@ -64,6 +65,9 @@ def load_data(**kwargs):
         host="postgres-postgis"
     )
     cur = conn.cursor()
+    # cerco di risolvere l'errore nel log facendo ricercare nel public come da report da terminale 
+    cur.execute("SET search_path TO public;")
+    # trovato eseguo l'insert
     insert_query = """
       INSERT INTO shops (shop_name, address, category, geom)
       VALUES (%s, %s, %s, ST_GeomFromText(%s, 4326))
@@ -83,6 +87,7 @@ def load_data(**kwargs):
     conn.commit()
     cur.close()
     conn.close()
+
 
 with DAG(
     'etl_shops',
