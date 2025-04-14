@@ -4,3 +4,5 @@ Faker
 psycopg2-binary
 requests
 cryptography
+python-dotenv
+
