@@ -50,6 +50,22 @@ NearYou-Project/
 ## PostgreSQL con PostGIS
 - E' ottimizzato per gestire dati statici e relazionali con capacità spaziali avanzate, ideali per memorizzare informazioni sui negozi e eseguire query geospaziali (ad esempio, per verificare la vicinanza degli esercizi commerciali agli utenti).
 - All'interno troviamo i punti commerciali
+- Accedere al container PostgresSQL:
+  ```bash
+docker-compose -f .devcontainer/docker-compose.yml exec postgres-postgis psql -U nearuser -d near_you_shops
+\dt
+SELECT * FROM shops LIMIT 10;
+```
+- Per eseguire Query Spaziali:
+  ```bash
+SELECT * FROM shops
+WHERE ST_DWithin(
+  geom::geography,
+  ST_SetSRID(ST_MakePoint(<LONGITUDINE>, <LATITUDINE>), 4326)::geography,
+  1000
+);
+
+```
 
 ## Configurazione Iniziale
 
