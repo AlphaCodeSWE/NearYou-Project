@@ -54,7 +54,7 @@ NearYou-Project/
   ```bash
    docker-compose -f .devcontainer/docker-compose.yml exec postgres-postgis psql -U nearuser -d near_you_shops
    SELECT * FROM shops LIMIT 10;
-```
+   ```
 - Per eseguire Query Spaziali:
   ```bash
    SELECT * FROM shops
@@ -63,7 +63,7 @@ NearYou-Project/
      ST_SetSRID(ST_MakePoint(<LONGITUDINE>, <LATITUDINE>), 4326)::geography,
      1000
    );
-```
+   ```
 
 ## Configurazione Iniziale
 
