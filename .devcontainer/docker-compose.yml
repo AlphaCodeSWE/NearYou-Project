@@ -194,7 +194,7 @@ services:
       - AIRFLOW__CORE__FERNET_KEY=uZ8CGq56QQcjCUGqj-ESyppA95968on1VGu1PTTPw30=
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AIRFLOW_HOME=/opt/airflow_home
-      - AIRFLOW__WEBSERVER__WEB_SERVER_PORT=8082
+      - AIRFLOW__WEBSERVER__WEB_SERVER_PORT=8080  # Aggiornata per consistenza
     volumes:
       - airflow_data:/opt/airflow_home
       - ../airflow/dags:/opt/airflow_home/dags
@@ -204,9 +204,6 @@ services:
       - seccomp:unconfined
     command: ["webserver", "-p", "8080"]
     restart: unless-stopped
-
-
-
 
   airflow-scheduler:
     image: apache/airflow:2.5.0
@@ -219,10 +216,10 @@ services:
       - airflow-init
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/near_you_shops
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW_HOME=/opt/airflow_home
       - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/0
-      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/near_you_shops
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CORE__WORKER_LOG_SERVER_BASE_URL=http://airflow-worker:8793
     volumes:
       - airflow_data:/opt/airflow_home
