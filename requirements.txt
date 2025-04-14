@@ -5,4 +5,7 @@ psycopg2-binary
 requests
 cryptography
 python-dotenv
-
+fastapi
+uvicorn
+langchain
+openai
