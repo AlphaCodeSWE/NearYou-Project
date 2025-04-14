@@ -246,6 +246,8 @@ services:
       - AIRFLOW__CORE__WORKER_LOG_SERVER_BASE_URL=http://airflow-worker:8793
     volumes:
       - airflow_data:/opt/airflow_home
+    ports:
+      - "8793:8793"
     security_opt:
       - seccomp:unconfined
     command: ["celery", "worker"]
