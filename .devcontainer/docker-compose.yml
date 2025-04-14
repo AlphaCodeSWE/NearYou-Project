@@ -219,9 +219,11 @@ services:
       - airflow-init
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
-      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/near_you_shops
       - AIRFLOW_HOME=/opt/airflow_home
+      - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/0
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/near_you_shops
+      - AIRFLOW__CORE__WORKER_LOG_SERVER_BASE_URL=http://airflow-worker:8793
     volumes:
       - airflow_data:/opt/airflow_home
       - ../airflow/dags:/opt/airflow_home/dags
