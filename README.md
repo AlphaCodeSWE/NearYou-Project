@@ -52,19 +52,17 @@ NearYou-Project/
 - All'interno troviamo i punti commerciali
 - Accedere al container PostgresSQL:
   ```bash
-docker-compose -f .devcontainer/docker-compose.yml exec postgres-postgis psql -U nearuser -d near_you_shops
-\dt
-SELECT * FROM shops LIMIT 10;
+   docker-compose -f .devcontainer/docker-compose.yml exec postgres-postgis psql -U nearuser -d near_you_shops
+   SELECT * FROM shops LIMIT 10;
 ```
 - Per eseguire Query Spaziali:
   ```bash
-SELECT * FROM shops
-WHERE ST_DWithin(
-  geom::geography,
-  ST_SetSRID(ST_MakePoint(<LONGITUDINE>, <LATITUDINE>), 4326)::geography,
-  1000
-);
-
+   SELECT * FROM shops
+   WHERE ST_DWithin(
+     geom::geography,
+     ST_SetSRID(ST_MakePoint(<LONGITUDINE>, <LATITUDINE>), 4326)::geography,
+     1000
+   );
 ```
 
 ## Configurazione Iniziale
