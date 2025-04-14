@@ -7,74 +7,77 @@ from datetime import datetime, timezone
 from kafka import KafkaProducer
 from clickhouse_driver import Client
 from clickhouse_driver.errors import ServerException
+import logging
 
-# Configurazioni Kafka
-BROKER = 'kafka:9093'
-TOPIC = 'gps_stream'
-MESSAGES_PER_SECOND = 5
+from logger_config import setup_logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
-# Percorsi dei certificati per mutual TLS
-SSL_CAFILE   = '/workspace/certs/ca.crt'
-SSL_CERTFILE = '/workspace/certs/client_cert.pem'
-SSL_KEYFILE  = '/workspace/certs/client_key.pem'
+# Importa configurazioni
+from config import KAFKA_BROKER, KAFKA_TOPIC, SSL_CAFILE, SSL_CERTFILE, SSL_KEYFILE
+from config import CLICKHOUSE_HOST, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_PORT, CLICKHOUSE_DATABASE
 
-def json_serializer(obj):
-    """Serializza un oggetto datetime in formato ISO-8601."""
-    if isinstance(obj, datetime):
-        return obj.isoformat()
-    raise TypeError("Tipo non serializzabile")
+# Funzione di utilità
+from utils import wait_for_broker
 
-def wait_for_broker(host, port, timeout=2):
-    """Attende che il broker Kafka sia raggiungibile sulla porta 9093."""
-    while True:
-        try:
-            with socket.create_connection((host, port), timeout):
-                print(f"Broker {host}:{port} disponibile")
-                return
-        except Exception as e:
-            print(f"Attendo broker {host}:{port}... {e}")
-            time.sleep(timeout)
+# Attendi che il broker Kafka sia disponibile
+wait_for_broker('kafka', 9093)
 
-def wait_for_database(db_name, client, timeout=2, max_retries=30):
-    """Attende finché il database 'nearyou' esiste in ClickHouse."""
+# Configura il client ClickHouse per controllare il database (opzionale, se serve verificarne la presenza)
+ch_client = Client(
+    host=CLICKHOUSE_HOST,
+    user=CLICKHOUSE_USER,
+    password=CLICKHOUSE_PASSWORD,
+    port=CLICKHOUSE_PORT,
+    database=CLICKHOUSE_DATABASE
+)
+
+def wait_for_database(db_name: str, client: Client, timeout: int = 2, max_retries: int = 30) -> bool:
+    """
+    Attende finché il database specificato esiste in ClickHouse.
+    
+    Parameters:
+        db_name (str): Nome del database.
+        client (Client): Istanza del client ClickHouse.
+        timeout (int): Tempo in secondi tra i tentativi.
+        max_retries (int): Numero massimo di tentativi.
+        
+    Returns:
+        bool: True se il database è disponibile.
+    """
     retries = 0
     while retries < max_retries:
         try:
             databases = client.execute("SHOW DATABASES")
             databases_list = [db[0] for db in databases]
             if db_name in databases_list:
-                print(f"Database '{db_name}' trovato.")
+                logger.info("Database '%s' trovato.", db_name)
                 return True
             else:
-                print(f"Database '{db_name}' non ancora disponibile. Riprovo...")
+                logger.info("Database '%s' non ancora disponibile. Riprovo...", db_name)
         except Exception as e:
-            print(f"Errore durante la verifica del database: {e}")
+            logger.error("Errore durante la verifica del database: %s", e)
         time.sleep(timeout)
         retries += 1
     raise Exception(f"Il database '{db_name}' non è stato trovato dopo {max_retries} tentativi.")
 
-# Attendi che il broker Kafka sia disponibile
-wait_for_broker('kafka', 9093)
-
-# Configura il client ClickHouse per controllare il database
-ch_client = Client(
-    host='clickhouse-server',
-    user='default',
-    password='pwe@123@l@',
-    port=9000,
-    database='nearyou'
-)
-
 # Attendi che il database "nearyou" sia disponibile in ClickHouse
 try:
-    wait_for_database("nearyou", ch_client)
+    wait_for_database(CLICKHOUSE_DATABASE, ch_client)
 except Exception as e:
-    print(e)
+    logger.error(e)
     exit(1)
 
-# Inizializza il KafkaProducer con mutual TLS e custom serializer per datetime
+def json_serializer(obj):
+    """
+    Serializza un oggetto datetime in formato ISO-8601.
+    """
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError("Tipo non serializzabile")
+
 producer = KafkaProducer(
-    bootstrap_servers=[BROKER],
+    bootstrap_servers=[KAFKA_BROKER],
     security_protocol='SSL',
     ssl_check_hostname=True,
     ssl_cafile=SSL_CAFILE,
@@ -83,10 +86,15 @@ producer = KafkaProducer(
     value_serializer=lambda v: json.dumps(v, default=json_serializer).encode('utf-8')
 )
 
-def generate_random_gps():
+def generate_random_gps() -> dict:
+    """
+    Genera dati GPS casuali e un timestamp in UTC.
+    
+    Returns:
+        dict: Dizionario con user_id, latitude, longitude e timestamp.
+    """
     lat = random.uniform(45.40, 45.50)
     lon = random.uniform(9.10, 9.30)
-    # Genera un timestamp come oggetto datetime in UTC
     timestamp_dt = datetime.now(timezone.utc)
     return {
         "user_id": random.randint(1, 1000),
@@ -96,10 +104,10 @@ def generate_random_gps():
     }
 
 if __name__ == '__main__':
-    print("Avvio del simulatore di dati GPS in modalità mutual TLS...")
+    logger.info("Avvio del simulatore di dati GPS in modalità mutual TLS...")
     while True:
         message = generate_random_gps()
-        producer.send(TOPIC, message)
+        producer.send(KAFKA_TOPIC, message)
         producer.flush()
-        print(f"Inviato: {message}")
-        time.sleep(1.0 / MESSAGES_PER_SECOND)
+        logger.info("Inviato: %s", message)
+        time.sleep(1.0 / 5)  # 5 messaggi al secondo
