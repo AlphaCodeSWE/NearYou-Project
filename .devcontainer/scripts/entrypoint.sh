@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-# Se non è già impostata, esporta la password per psql
-export PGPASSWORD="nearypass"
+
+if [ -z "$PGPASSWORD" ]; then
+    echo "La variabile d'ambiente PGPASSWORD non è impostata."
+    exit 1
+fi
 
 # 1) Attendi che la tabella 'shops' in Postgres sia disponibile
 echo "Attendo la creazione della tabella 'shops' in Postgres..."
