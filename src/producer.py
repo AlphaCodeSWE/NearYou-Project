@@ -11,8 +11,8 @@ from logger_config import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-from config import KAFKA_BROKER, KAFKA_TOPIC, SSL_CAFILE, SSL_CERTFILE, SSL_KEYFILE
-from config import CLICKHOUSE_HOST, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_PORT, CLICKHOUSE_DATABASE
+from configg import KAFKA_BROKER, KAFKA_TOPIC, SSL_CAFILE, SSL_CERTFILE, SSL_KEYFILE
+from configg import CLICKHOUSE_HOST, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_PORT, CLICKHOUSE_DATABASE
 
 from utils import wait_for_broker
 

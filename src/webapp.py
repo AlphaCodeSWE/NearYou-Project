@@ -6,7 +6,7 @@ import logging
 from clickhouse_driver import Client
 import psycopg2
 
-from config import (
+from configg import (
     CLICKHOUSE_HOST, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_PORT, CLICKHOUSE_DATABASE,
     POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, POSTGRES_PORT
 )
