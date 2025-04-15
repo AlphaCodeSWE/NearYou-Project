@@ -191,9 +191,6 @@ services:
       - airflow-postgres
       - airflow-redis
       - airflow-init
-      
-      - init_postgres:
-          condition: service_completed_successfully
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
@@ -221,9 +218,6 @@ services:
       - airflow-postgres
       - airflow-redis
       - airflow-init
-      # Aggiunta la dipendenza specifica da init_postgres
-      - init_postgres:
-          condition: service_completed_successfully
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
@@ -247,9 +241,6 @@ services:
       - airflow-postgres
       - airflow-redis
       - airflow-init
-      
-      - init_postgres:
-          condition: service_completed_successfully
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow

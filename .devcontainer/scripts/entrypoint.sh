@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Inizio configurazione: imposto ownership e permessi su /opt/airflow_home..."
+# 1) Attendi che la tabella 'shops' in Postgres sia disponibile
+echo "Attendo la creazione della tabella 'shops' in Postgres..."
+until psql -h postgres-postgis -U nearuser -d near_you_shops -c "SELECT 1 FROM shops LIMIT 1;" 2>/dev/null; do
+    echo "La tabella 'shops' non è ancora disponibile, riprovo tra 5 secondi..."
+    sleep 5
+done
+echo "Tabella 'shops' trovata. Procedo con la configurazione di Airflow."
+
+# 2) Imposta ownership e permessi su /opt/airflow_home
+echo "Imposto ownership e permessi su /opt/airflow_home..."
 if chown -R airflow /opt/airflow_home; then
     echo "Ownership impostato correttamente."
 else
@@ -16,16 +25,17 @@ else
     exit 1
 fi
 
-echo "Inizializzazione e upgrade del database..."
-# Esegue airflow db init e, in ogni caso, airflow db upgrade per applicare tutte le migrazioni mancanti.
+# 3) Inizializzazione e upgrade del DB di Airflow
+echo "Inizializzazione e upgrade del database Airflow..."
 su airflow -c "airflow db init" || true
 su airflow -c "airflow db upgrade"
 
-echo "Attivo automaticamente il DAG etl_shops..."
+# 4) Attiva automaticamente il DAG 'etl_shops'
+echo "Attivo automaticamente il DAG etl_shops (se presente)..."
 su airflow -c "airflow dags unpause etl_shops" || echo "DAG etl_shops già attivo o errore nell'unpause."
 
-echo "Creazione automatica dell'utenza Airflow..."
-# Tenta di creare l'utente admin; se già esistente, il comando fallirà e verrà stampato un messaggio.
+# 5) Creazione automatica dell'utenza Airflow
+echo "Creazione automatica dell'utenza Admin in Airflow..."
 su airflow -c "airflow users create \
   --username admin \
   --firstname Admin \
@@ -34,5 +44,6 @@ su airflow -c "airflow users create \
   --email admin@example.com \
   --password admin" || echo "Utente admin già esistente o errore nella creazione."
 
+# 6) Avvio dello Scheduler come utente 'airflow'
 echo "Avvio di Airflow Scheduler come utente 'airflow'..."
 exec su airflow -c "airflow scheduler"
