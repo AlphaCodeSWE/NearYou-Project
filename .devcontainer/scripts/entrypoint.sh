@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# Se non è già impostata, esporta la password per psql
+export PGPASSWORD="nearypass"
+
 # 1) Attendi che la tabella 'shops' in Postgres sia disponibile
 echo "Attendo la creazione della tabella 'shops' in Postgres..."
 until psql -h postgres-postgis -U nearuser -d near_you_shops -c "SELECT 1 FROM shops LIMIT 1;" 2>/dev/null; do
@@ -34,7 +37,7 @@ su airflow -c "airflow db upgrade"
 echo "Attivo automaticamente il DAG etl_shops (se presente)..."
 su airflow -c "airflow dags unpause etl_shops" || echo "DAG etl_shops già attivo o errore nell'unpause."
 
-# 5) Creazione automatica dell'utenza Airflow
+# 5) Creazione automatica dell'utenza Admin in Airflow
 echo "Creazione automatica dell'utenza Admin in Airflow..."
 su airflow -c "airflow users create \
   --username admin \
