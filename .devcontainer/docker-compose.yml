@@ -17,6 +17,11 @@ services:
       - ALLOW_ANONYMOUS_LOGIN=yes
     ports:
       - "2181:2181"
+    healthcheck:
+      test: ["CMD", "echo", "ruok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: bitnami/kafka:3.4
@@ -48,12 +53,22 @@ services:
       - "9093:9093"
     depends_on:
       - zookeeper
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "localhost:9093"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
 
   hivemq:
     image: hivemq/hivemq-ce:latest
     ports:
       - "1883:1883"
       - "8083:8083"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
 
   nifi:
     image: apache/nifi:latest
@@ -61,6 +76,11 @@ services:
       - NIFI_WEB_HTTP_PORT=8081
     ports:
       - "8081:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/nifi"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
 
   grafana:
     image: grafana/grafana:latest
@@ -73,6 +93,11 @@ services:
       - grafana_data:/var/lib/grafana
     ports:
       - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
 
   clickhouse:
     image: clickhouse/clickhouse-server:latest
@@ -85,6 +110,11 @@ services:
     ports:
       - "8123:8123"
       - "9000:9000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   init_clickhouse:
     build:
@@ -145,6 +175,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "nearuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   init_postgres:
     image: postgis/postgis:15-3.3
@@ -156,7 +191,6 @@ services:
     command: ["bash", "-c", "chmod +x /docker-entrypoint-initdb.d/init_postgres.sh && /docker-entrypoint-initdb.d/init_postgres.sh"]
     restart: "no"
 
-  # Database per i metadati di Airflow
   airflow-postgres:
     image: postgres:13
     environment:
@@ -166,12 +200,21 @@ services:
     volumes:
       - airflow_pgdata:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   airflow-redis:
     image: redis:latest
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Inizializzazione del DB metadati di Airflow
   airflow-init:
     image: apache/airflow:2.5.0
     depends_on:

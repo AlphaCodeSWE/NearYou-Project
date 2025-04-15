@@ -3,22 +3,10 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspace",
-  
-  // Uso porte per le tecnologie:
-  //  - 8081 per NiFi
-  //  - 1883 per HiveMQ MQTT
-  //  - 9093 e 9092 per Kafka (9093 per SSL, 9092 per PLAINTEXT)
-  //  - 8080 per l'interfaccia web di HiveMQ
-  //  - 8123 per l'interfaccia HTTP di ClickHouse
-  //  - 9000 per connessioni TCP a ClickHouse
-  //  - 3000 per Grafana
   "forwardPorts": [8081, 1883, 9093, 9092, 8080, 8123, 9000, 3000, 8082, 8083, 8793],
-  
   "features": {
     "docker-in-docker": "latest"
   },
-  
   "postCreateCommand": "chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh && /workspace/.devcontainer/scripts/init_clickhouse.sh",
-  
   "remoteUser": "vscode"
 }

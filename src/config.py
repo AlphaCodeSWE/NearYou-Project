@@ -1,7 +1,8 @@
+# src/config.py
 import os
 from dotenv import load_dotenv
 
-load_dotenv()  # Carica variabili dall'ambiente se presenti
+load_dotenv()  # Carica le variabili dall’ambiente (cerca anche .env nella cartella WORKDIR)
 
 # Configurazione Kafka
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "kafka:9093")

@@ -1,3 +1,4 @@
+# src/etl_shops.py
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from datetime import datetime, timedelta
@@ -13,7 +14,6 @@ default_args = {
 }
 
 def extract_data(**kwargs):
-    # Estraggo i dati su Milano (esercizi commerciali)
     overpass_query = """
     [out:json][timeout:25];
     area["name"="Milano"]->.searchArea;
@@ -28,7 +28,6 @@ def extract_data(**kwargs):
     response = requests.post(url, data={'data': overpass_query})
     response.raise_for_status()
     data = response.json()
-    # Restituisce l'elenco degli elementi estratti
     return data.get("elements", [])
 
 def transform_data(**kwargs):
@@ -36,7 +35,6 @@ def transform_data(**kwargs):
     raw_data = ti.xcom_pull(task_ids='extract_data')
     transformed = []
     for element in raw_data:
-        # Gestiamo nodi e way/relazioni con campo "center"
         if element.get("type") == "node":
             lat = element.get("lat")
             lon = element.get("lon")
@@ -44,7 +42,7 @@ def transform_data(**kwargs):
             lat = element["center"].get("lat")
             lon = element["center"].get("lon")
         else:
-            continue  # Salta gli elementi senza coordinate
+            continue
         tags = element.get("tags", {})
         transformed.append({
             "name": tags.get("name", "Non specificato"),
@@ -57,7 +55,6 @@ def transform_data(**kwargs):
 def load_data(**kwargs):
     ti = kwargs['ti']
     shops = ti.xcom_pull(task_ids='transform_data')
-    print("Dati da caricare:", shops)  # Debug
     conn = psycopg2.connect(
         dbname="near_you_shops",
         user="nearuser",
@@ -65,9 +62,7 @@ def load_data(**kwargs):
         host="postgres-postgis"
     )
     cur = conn.cursor()
-    # cerco di risolvere l'errore nel log facendo ricercare nel public come da report da terminale 
     cur.execute("SET search_path TO public;")
-    # trovato eseguo l'insert
     insert_query = """
       INSERT INTO shops (shop_name, address, category, geom)
       VALUES (%s, %s, %s, ST_GeomFromText(%s, 4326))
@@ -88,7 +83,6 @@ def load_data(**kwargs):
     cur.close()
     conn.close()
 
-
 with DAG(
     'etl_shops',
     default_args=default_args,
@@ -98,20 +92,17 @@ with DAG(
 
     extract_task = PythonOperator(
         task_id='extract_data',
-        python_callable=extract_data,
-        provide_context=True
+        python_callable=extract_data
     )
 
     transform_task = PythonOperator(
         task_id='transform_data',
-        python_callable=transform_data,
-        provide_context=True
+        python_callable=transform_data
     )
 
     load_task = PythonOperator(
         task_id='load_data',
-        python_callable=load_data,
-        provide_context=True
+        python_callable=load_data
     )
 
     extract_task >> transform_task >> load_task
