@@ -63,6 +63,19 @@ NearYou-Project/
 ##  ClickHouse:
 - E' progettato per analisi ad alte prestazioni su grandi volumi di dati in streaming (OLAP), perfetto per gestire i dati dinamici in tempo reale come quelli provenienti dai simulatori o dai sensori.
 - Contiene: users, user_event
+- Accedere al container ClickHouse:
+
+```bash
+docker exec -it clickhouse-server clickhouse-client
+```
+
+Eseguire i seguenti comandi SQL:
+
+```sql
+USE nearyou; SHOW TABLES; SELECT * FROM user_events LIMIT 10;
+
+
+```
 ## PostgreSQL con PostGIS
 - E' ottimizzato per gestire dati statici e relazionali con capacità spaziali avanzate, ideali per memorizzare informazioni sui negozi e eseguire query geospaziali (ad esempio, per verificare la vicinanza degli esercizi commerciali agli utenti).
 - All'interno troviamo i punti commerciali
