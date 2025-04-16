@@ -123,22 +123,6 @@ docker-compose -f .devcontainer/docker-compose.yml logs producer
 docker-compose -f .devcontainer/docker-compose.yml logs consumer
 ```
 
-## Verifica Database ClickHouse
-
-Accedere al container ClickHouse:
-
-```bash
-docker exec -it clickhouse-server clickhouse-client
-```
-
-Eseguire i seguenti comandi SQL:
-
-```sql
-USE nearyou;
-SHOW TABLES;
-SELECT * FROM user_events LIMIT 10;
-```
-
 ## Generazione Certificati Client Mutual TLS
 
 Entrare nella directory certificati:
@@ -177,9 +161,26 @@ Per verificare la presenza dei certificati nei container:
 ```bash
 docker-compose -f .devcontainer/docker-compose.yml exec consumer ls -la /workspace/certs
 ```
-## Riavvio completo 
+
+## Controllare lo stato di Airflow
 ```bash
 docker-compose -f .devcontainer/docker-compose.yml restart
+```
+
+## Riavvio completo 
+```bash
+docker-compose -f .devcontainer/docker-compose.yml logs airflow-webserver
+```
+```bash
+docker-compose -f .devcontainer/docker-compose.yml logs airflow-scheduler
+```
+```bash
+docker-compose -f .devcontainer/docker-compose.yml logs airflow-worker
+```
+```Accedere ai container
+docker-compose -f .devcontainer/docker-compose.yml restart airflow-webserver airflow-scheduler airflow-worker airflow-init
+docker-compose -f .devcontainer/docker-compose.yml exec airflow-webserver bash
+
 ```
 ## Note Aggiuntive
 
