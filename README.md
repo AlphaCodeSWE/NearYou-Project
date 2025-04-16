@@ -162,12 +162,12 @@ Per verificare la presenza dei certificati nei container:
 docker-compose -f .devcontainer/docker-compose.yml exec consumer ls -la /workspace/certs
 ```
 
-## Controllare lo stato di Airflow
+## Riavvio 
 ```bash
 docker-compose -f .devcontainer/docker-compose.yml restart
 ```
 
-## Riavvio completo 
+## Airflow
 ```bash
 docker-compose -f .devcontainer/docker-compose.yml logs airflow-webserver
 ```
