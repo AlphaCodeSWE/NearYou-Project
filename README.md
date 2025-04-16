@@ -3,7 +3,7 @@
 Questa repository contiene il codice e la configurazione necessari per eseguire una piattaforma di advertising personalizzata basata su flussi dati GPS inviati a Kafka e archiviati in ClickHouse. Il progetto utilizza comunicazione sicura tramite Mutual TLS.
 
 ## Struttura della Repository
-
+```
 NearYou-Project/
 ├── .devcontainer/
 │   ├── .env                      # Variabili d'ambiente (es. LOG_LEVEL, KAFKA_KEYSTORE_PASS, etc.)
@@ -43,7 +43,7 @@ NearYou-Project/
 │   └── webapp.py                # Web App FastAPI: espone API e una mappa interattiva (Leaflet) per la visualizzazione in tempo reale (DA CREARE)
 ├── requirements.txt             # Elenco delle dipendenze Python
 └── README.md                    # Documentazione del progetto
-
+```
 
 ## Descrizione Componenti
 
