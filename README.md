@@ -4,30 +4,46 @@ Questa repository contiene il codice e la configurazione necessari per eseguire 
 
 ## Struttura della Repository
 
-```
 NearYou-Project/
 ├── .devcontainer/
-│   ├── docker-compose.yml       # Configurazione Docker Compose
-│   ├── Dockerfile               # Dockerfile per il devcontainer
-│   ├── devcontainer.json        # Configurazione per VSCode
+│   ├── .env                      # Variabili d'ambiente (es. LOG_LEVEL, KAFKA_KEYSTORE_PASS, etc.)
+│   ├── docker-compose.yml        # Configurazione Docker Compose con healthcheck e volumi
+│   ├── Dockerfile                # Dockerfile per la build dell’immagine principale (app)
+│   ├── devcontainer.json         # Configurazione per VSCode Dev Container
 │   └── scripts/
-│       └── init_clickhouse.sh   # Script inizializzazione ClickHouse
+│       ├── entrypoint.sh         # Script di avvio per Airflow (scheduler e configurazione)
+│       ├── init_clickhouse.sh    # Script per l'inizializzazione di ClickHouse
+│       └── init_postgres.sh      # Script per l'inizializzazione di Postgres/PostGIS
+├── airflow/
+│   ├── dags/
+│   │   └── etl_shops.py          # DAG Airflow che estrae dati da Overpass API e li carica in Postgres
+│   └── plugins/                  # (Eventuali plugin personalizzati per Airflow)
+|   └── logs/                     # file log di Airflow
 ├── certs/
 │   ├── ca.crt                   # Certificato CA
 │   ├── ca.key                   # Chiave privata CA
 │   ├── ca.srl                   # File seriale CA
-│   ├── kafka.keystore.jks       # Keystore Kafka
-│   ├── kafka.truststore.jks     # Truststore Kafka
-│   ├── client_key.pem           # Chiave privata client
-│   ├── client_cert.pem          # Certificato client
+│   ├── kafka.keystore.jks       # Keystore per Kafka
+│   ├── kafka.truststore.jks     # Truststore per Kafka
+│   ├── client_key.pem           # Chiave privata del client
+│   ├── client_cert.pem          # Certificato del client
 │   └── client.csr               # CSR per il client
+├── client_config/
+│   ├── client.properties        # Configurazione Kafka per il client
+│   └── client.properties.template # Template della configurazione
 ├── src/
-│   ├── producer.py              # Producer Kafka
-│   └── consumer.py              # Consumer Kafka e ClickHouse
-|   └── generate_users.py        # Genero degli utenti attraverso Faker
-├── requirements.txt             # Dipendenze Python
-└── README.md                    # Questo file
-```
+│   ├── __init__.py              # File vuoto per rendere "src" un package Python    (DA CREARE)
+│   ├── configg.py               # Configurazione del progetto (variabili di connessione a Kafka, ClickHouse, Postgres)
+│   ├── logger_config.py         # Configurazione del logging, configurabile tramite LOG_LEVEL
+│   ├── utils.py                 # Funzioni di utilità (attesa per la disponibilità del broker, etc.)
+│   ├── db_utils.py              # Funzioni di utilità per la gestione del database ClickHouse (wait_for_clickhouse_database, etc.)
+│   ├── producer.py              # Producer Kafka: genera dati GPS e li invia in batch a Kafka
+│   ├── consumer.py              # Consumer Kafka: riceve dati, verifica ClickHouse e inserisce i dati nella tabella
+│   ├── generate_users.py        # Genera dati utente (con Faker) e li inserisce in ClickHouse
+│   └── webapp.py                # Web App FastAPI: espone API e una mappa interattiva (Leaflet) per la visualizzazione in tempo reale (DA CREARE)
+├── requirements.txt             # Elenco delle dipendenze Python
+└── README.md                    # Documentazione del progetto
+
 
 ## Descrizione Componenti
 
