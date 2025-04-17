@@ -51,6 +51,7 @@ NearYou-Project/
 - **Consumer**: riceve i dati da Kafka, verifica l’esistenza del database ClickHouse e della tabella necessaria, quindi inserisce i dati nel database.
 
 ## Grafana Dashboard
+- **(Integrato tramite plugin) fornisce dashboard interattive per il monitoraggio e l'analisi dei dati in ClikHouse**
 - Attraverso il link presente su ports (3000) apro il browser che linka alla dashboard o https://<workspace-id>-3000.gitpod.io
 - Per configurarla si accede con dati di default (admin/admin), nel nostro caso abbiamo cambaito la pw
 - Si aggiunge un nuovo **Data Source** , clickhouse non c'è di deafult e quindi sul docker-compose.yml serve l'inclusione di GF_INSTALL_PLUGINS=vertamedia-clickhouse-datasource .
@@ -168,6 +169,7 @@ docker-compose -f .devcontainer/docker-compose.yml restart
 ```
 
 ## Airflow
+ - **orchestra le pipeline ETL (Extract,Transforme,Load) ad esempio nel nostro caso per estrarre dati da fonti ester (OverPass api) e memorizzale in PostGres**
 ```bash
 docker-compose -f .devcontainer/docker-compose.yml logs airflow-webserver
 ```
