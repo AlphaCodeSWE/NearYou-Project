@@ -27,6 +27,7 @@ services:
     image: bitnami/kafka:3.4
     env_file:
       - .env
+    restart: unless-stopped  
     volumes:
       - ../certs:/bitnami/kafka/config/certs
       - ../client_config:/opt/client_config:ro
