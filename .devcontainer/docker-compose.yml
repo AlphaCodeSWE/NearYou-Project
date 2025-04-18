@@ -131,7 +131,7 @@ services:
   
   message-generator:
     build:
-      context: ./services/message_generator
+      context: ../services/message_generator
     env_file:
       - .env          # contiene OPENAI_API_KEY
     ports:
