@@ -191,6 +191,13 @@ docker-compose -f .devcontainer/docker-compose.yml exec airflow-webserver bash
 - Mutual TLS è configurato per sicurezza delle comunicazioni tra Kafka e client.
 - Avviare gitpod: https://gitpod.io/#https://github.com/AlphaCodeSWE/NearYou-Project
 
+-healty alla fine mi dice lo stato di salute dei container
+-FIX da risolvere : kafka ad ogni riavvio ha bisogno delle pulizia dei metadati (meta.properites)
+-docker-compose -f .devcontainer/docker-compose.yml down    (fermo i container ma non i volumi)
+-docker volume ls (leggo il nome e in base al nome: ) docker volume rm devcontainer_kafka_data
+-docker-compose -f .devcontainer/docker-compose.yml up -d RIAVVIO
+
+
 Per qualsiasi dubbio o ulteriore necessità consultare questo file o contattare il team di sviluppo: alphacodeswe@gmail.com
 
 
