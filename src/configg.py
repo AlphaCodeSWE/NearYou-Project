@@ -27,3 +27,9 @@ POSTGRES_USER = os.getenv("POSTGRES_USER", "nearuser")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "nearypass")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "near_you_shops")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
+
+# URL del micro‑servizio che genera i messaggi
+MESSAGE_GENERATOR_URL = os.getenv(
+    "MESSAGE_GENERATOR_URL",
+    "http://message-generator:8001/generate",
+)
