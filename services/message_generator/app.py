@@ -1,20 +1,21 @@
+# services/message_generator/app.py
+
 import os
-import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage
 from langchain import PromptTemplate
 
-# ---------- configurazione provider ----------
-PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()
-BASE_URL = os.getenv("OPENAI_API_BASE") or None
-API_KEY  = os.getenv("OPENAI_API_KEY")          # usata da Groq/Together/Fireworks/OpenAI
+# --------------- Configuration -----------------
+PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()  # e.g. "groq"
+BASE_URL = os.getenv("OPENAI_API_BASE") or None          # e.g. "https://api.groq.com/openai/v1"
+API_KEY  = os.getenv("OPENAI_API_KEY")                   # your Groq API key
 
 if PROVIDER in {"openai", "groq", "together", "fireworks"} and not API_KEY:
     raise RuntimeError("OPENAI_API_KEY mancante per il provider scelto")
 
-# ---------- prompt template ----------
+# --------------- Prompt Template -----------------
 PROMPT_TMPL = """Sei un sistema di advertising che crea un messaggio conciso e coinvolgente.
 Utente:
 - Età: {age}
@@ -32,17 +33,18 @@ Condizioni:
 
 Genera il messaggio in italiano:"""
 template = PromptTemplate(
-    input_variables=["age", "profession", "interests",
-                     "name", "category", "description"],
+    input_variables=["age", "profession", "interests", "name", "category", "description"],
     template=PROMPT_TMPL,
 )
 
-# ---------- helper per chiamare il modello ----------
+# --------------- LLM Invocation -----------------
 def call_llm(prompt: str) -> str:
-    # Provider con API compatibile OpenAI (Groq è qui)
     if PROVIDER in {"openai", "groq", "together", "fireworks"}:
+        # use a supported Groq model instead of the deprecated one
+        groq_model = "mixtral-8x7b-instruct-v0.1"
+        model_name = "gpt-4o-mini" if PROVIDER == "openai" else groq_model
         llm = ChatOpenAI(
-            model="mixtral-8x7b-32768" if PROVIDER != "openai" else "gpt-4o-mini",
+            model=model_name,
             temperature=0.7,
             openai_api_key=API_KEY,
             openai_api_base=BASE_URL,
@@ -51,7 +53,7 @@ def call_llm(prompt: str) -> str:
 
     raise RuntimeError(f"Provider LLM non supportato: {PROVIDER}")
 
-# ---------- FastAPI ----------
+# --------------- FastAPI App -----------------
 class User(BaseModel):
     age: int
     profession: str
@@ -69,7 +71,7 @@ class GenerateRequest(BaseModel):
 class GenerateResponse(BaseModel):
     message: str
 
-app = FastAPI(title="NearYou Message Generator")
+app = FastAPI(title="NearYou Message Generator")
 
 @app.get("/health")
 async def health():
@@ -78,7 +80,7 @@ async def health():
 @app.post("/generate", response_model=GenerateResponse)
 async def generate(req: GenerateRequest):
     try:
-        prompt = template.format(
+        prompt_text = template.format(
             age=req.user.age,
             profession=req.user.profession,
             interests=req.user.interests,
@@ -86,7 +88,7 @@ async def generate(req: GenerateRequest):
             category=req.poi.category,
             description=req.poi.description,
         )
-        result = call_llm(prompt)
+        result = call_llm(prompt_text)
         return GenerateResponse(message=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
