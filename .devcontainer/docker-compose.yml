@@ -129,11 +129,18 @@ services:
       - clickhouse
     restart: "no"
   
-  message-generator:
+    message-generator:
     build:
-      context: ../services/message_generator
+      context: ..                      # usa lo stesso Dockerfile unico
+      dockerfile: .devcontainer/Dockerfile
+    command: >
+      uvicorn services.message_generator.app:app
+      --host 0.0.0.0 --port 8001
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace:cached           # monta l’intero repo (codice hot‑reload)
     env_file:
-      - .env          # contiene OPENAI_API_KEY
+      - .env                         
     ports:
       - "8001:8001"
     healthcheck:
@@ -142,6 +149,7 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
 
   producer:
     build:

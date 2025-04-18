@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copia la cartella degli script dall'host all'interno dell'immagine
 # Il contesto di build è la radice del repository (NearYou-Project)
+COPY . /workspace         
 COPY .devcontainer/scripts /workspace/.devcontainer/scripts
 
 # Imposta i permessi di esecuzione per lo script di inizializzazione
