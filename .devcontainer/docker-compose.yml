@@ -27,7 +27,7 @@ services:
     image: bitnami/kafka:3.4
     env_file:
       - .env
-    restart: unless-stopped  
+    restart: unless-stopped
     volumes:
       - ../certs:/bitnami/kafka/config/certs
       - ../client_config:/opt/client_config:ro
@@ -128,28 +128,27 @@ services:
     depends_on:
       - clickhouse
     restart: "no"
-  
-    message-generator:
-     build:
-        context: ..                      # usa lo stesso Dockerfile unico
-        dockerfile: .devcontainer/Dockerfile
-     command: >
-        uvicorn services.message_generator.app:app
-        --host 0.0.0.0 --port 8001
-     working_dir: /workspace
-     volumes:
-        - ..:/workspace:cached           # monta l’intero repo (codice hot‑reload)
-     env_file:
-        - .env                         
-     ports:
-        - "8001:8001"
-     healthcheck:
-        test: ["CMD","curl","-f","http://localhost:8001/health"]
-        interval: 30s
-        timeout: 5s
-        retries: 5
-     restart: unless-stopped
 
+  message-generator:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    command: >
+      uvicorn services.message_generator.app:app
+      --host 0.0.0.0 --port 8001
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace:cached
+    env_file:
+      - .env
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   producer:
     build:
@@ -212,7 +211,12 @@ services:
       - postgres
     volumes:
       - ./scripts/init_postgres.sh:/docker-entrypoint-initdb.d/init_postgres.sh
-    command: ["bash", "-c", "chmod +x /docker-entrypoint-initdb.d/init_postgres.sh && /docker-entrypoint-initdb.d/init_postgres.sh"]
+    command:
+      [
+        "bash",
+        "-c",
+        "chmod +x /docker-entrypoint-initdb.d/init_postgres.sh && /docker-entrypoint-initdb.d/init_postgres.sh"
+      ]
     restart: "no"
 
   airflow-postgres:
@@ -249,7 +253,8 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
     volumes:
       - airflow_data:/opt/airflow_home
-    command: ["airflow", "db", "init"]
+    command:
+      ["airflow", "db", "init"]
     restart: "no"
 
   airflow-webserver:
@@ -324,8 +329,6 @@ services:
       - seccomp:unconfined
     command: ["celery", "worker"]
     restart: unless-stopped
-
-  
 
 volumes:
   kafka_data:
