@@ -133,7 +133,7 @@ services:
     build:
       context: ./services/message_generator
     env_file:
-      - .devcontainer/.env          # contiene OPENAI_API_KEY
+      - .env          # contiene OPENAI_API_KEY
     ports:
       - "8001:8001"
     healthcheck:
