@@ -8,9 +8,9 @@ from langchain.schema import HumanMessage
 from langchain import PromptTemplate
 
 # --------------- Configuration -----------------
-PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()  # e.g. "groq"
-BASE_URL = os.getenv("OPENAI_API_BASE") or None          # e.g. "https://api.groq.com/openai/v1"
-API_KEY  = os.getenv("OPENAI_API_KEY")                   # your Groq API key
+PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()   # es. "groq"
+BASE_URL = os.getenv("OPENAI_API_BASE") or None          # es. https://api.groq.com/openai/v1
+API_KEY  = os.getenv("OPENAI_API_KEY")                   # la tua Groq API Key
 
 if PROVIDER in {"openai", "groq", "together", "fireworks"} and not API_KEY:
     raise RuntimeError("OPENAI_API_KEY mancante per il provider scelto")
@@ -40,9 +40,8 @@ template = PromptTemplate(
 # --------------- LLM Invocation -----------------
 def call_llm(prompt: str) -> str:
     if PROVIDER in {"openai", "groq", "together", "fireworks"}:
-        # use a supported Groq model instead of the deprecated one
-        groq_model = "mixtral-8x7b-instruct-v0.1"
-        model_name = "gpt-4o-mini" if PROVIDER == "openai" else groq_model
+        # modelli di produzione Groq Cloud supportati: gemma2-9b-it
+        model_name = "gpt-4o-mini" if PROVIDER == "openai" else "gemma2-9b-it"
         llm = ChatOpenAI(
             model=model_name,
             temperature=0.7,
