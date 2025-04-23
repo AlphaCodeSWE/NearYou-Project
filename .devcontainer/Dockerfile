@@ -1,5 +1,5 @@
 # .devcontainer/Dockerfile
-FROM python:3.10-bullseye
+FROM python:3.10-bookworm-slim
 
 # Aggiorna gli indici dei pacchetti e installa il client Docker
 RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/*
