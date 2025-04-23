@@ -1,5 +1,6 @@
 # .devcontainer/Dockerfile
-FROM python:3.11-bookworm-slim
+FROM python:3.11-slim-bookworm
+
 
 
 # Aggiorna gli indici dei pacchetti e installa il client Docker
