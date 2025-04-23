@@ -1,18 +1,20 @@
+# services/message_generator/app.py
+
 import os
+import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-# --- Generazione locale con GPT4All ---
-from gpt4all import GPT4All
+# --- Configurazione HF Inference API ---
+HF_API_TOKEN = os.getenv("HF_API_TOKEN")  # definisci questo in .env
+HF_MODEL       = os.getenv("HF_MODEL", "gpt2")  # es. "gpt2", "distilgpt2", o un modello più grande se hai quota
 
-# --------------- Configuration -----------------
-# Le variabili e il codice per OpenAI/Groq non servono più, le lasciamo commentate:
-# PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()   # NON USATO
-# BASE_URL = os.getenv("OPENAI_API_BASE") or None         # NON USATO
-# API_KEY  = os.getenv("OPENAI_API_KEY")                  # NON USATO
-#
-# if PROVIDER in {"openai", "groq", "together", "fireworks"} and not API_KEY:
-#     raise RuntimeError("OPENAI_API_KEY mancante per il provider scelto")
+if not HF_API_TOKEN:
+    raise RuntimeError("HF_API_TOKEN mancante per l'API di Hugging Face")
+
+HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+HF_HEADERS = {"Authorization": f"Bearer {HF_API_TOKEN}"}
+
 
 # --------------- Prompt Template -----------------
 PROMPT_TMPL = """Sei un sistema di advertising che crea un messaggio conciso e coinvolgente.
@@ -32,42 +34,47 @@ Condizioni:
 
 Genera il messaggio in italiano:"""
 
-# --- RIMOSSO: LangChain PromptTemplate e template ---
-# from langchain import PromptTemplate
-# template = PromptTemplate(
-#     input_variables=["age", "profession", "interests", "name", "category", "description"],
-#     template=PROMPT_TMPL,
-# )
 
-# --------------- LLM Invocation -----------------
-# Carica il modello GPT4All “j-v1.3-groovy” (~200 MB) e scaricalo se mancante
-llm_local = GPT4All(
-    model_name="gpt4all-j-v1.3-groovy",
-    allow_download=True,
-    verbose=False
-)
+# --- Vecchia parte LangChain / Groq / OpenAI (commentata) ---
+# from langchain.chat_models import ChatOpenAI
+# from langchain.schema import HumanMessage
+# PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()
+# BASE_URL = os.getenv("OPENAI_API_BASE") or None
+# API_KEY  = os.getenv("OPENAI_API_KEY")
+# if PROVIDER in {"openai", "groq"} and not API_KEY:
+#     raise RuntimeError("OPENAI_API_KEY mancante")
+#
+# def call_llm_with_groq_or_openai(prompt: str) -> str:
+#     model_name = "gpt-4o-mini" if PROVIDER == "openai" else "gemma2-9b-it"
+#     llm = ChatOpenAI(
+#         model=model_name,
+#         temperature=0.7,
+#         openai_api_key=API_KEY,
+#         openai_api_base=BASE_URL,
+#     )
+#     return llm([HumanMessage(content=prompt)]).content.strip()
+
 
 def call_llm(prompt: str) -> str:
     """
-    Genera completamento locale con gpt4all-j-v1.3-groovy.
+    Genera completamento tramite API di Hugging Face.
     """
-    # .generate restituisce l'intero testo (prompt + completamento)
-    full_text = llm_local.generate(prompt, max_tokens=50)
-    # Rimuove la parte di prompt, lasciando solo il completamento
-    return full_text[len(prompt):].strip()
+    payload = {
+        "inputs": prompt,
+        "parameters": {"max_new_tokens": 50, "return_full_text": True},
+    }
+    resp = requests.post(HF_API_URL, headers=HF_HEADERS, json=payload, timeout=60)
+    if not resp.ok:
+        raise HTTPException(status_code=502, detail=f"HF API error: {resp.status_code} {resp.text}")
+    data = resp.json()
+    # data può essere: {"generated_text": "..."} oppure [{"generated_text": "..."}]
+    if isinstance(data, list):
+        text = data[0].get("generated_text", "")
+    else:
+        text = data.get("generated_text", "")
+    # togliamo il prompt iniziale
+    return text[len(prompt):].strip()
 
-# --- RIMOSSO: chiamata a ChatOpenAI tramite LangChain/OpenAI API ---
-# def call_llm(prompt: str) -> str:
-#     if PROVIDER in {"openai", "groq", "together", "fireworks"}:
-#         model_name = "gpt-4o-mini" if PROVIDER == "openai" else "gemma2-9b-it"
-#         llm = ChatOpenAI(
-#             model=model_name,
-#             temperature=0.7,
-#             openai_api_key=API_KEY,
-#             openai_api_base=BASE_URL,
-#         )
-#         return llm([HumanMessage(content=prompt)]).content.strip()
-#     raise RuntimeError(f"Provider LLM non supportato: {PROVIDER}")
 
 # --------------- FastAPI App -----------------
 class User(BaseModel):
@@ -87,7 +94,7 @@ class GenerateRequest(BaseModel):
 class GenerateResponse(BaseModel):
     message: str
 
-app = FastAPI(title="NearYou Message Generator")
+app = FastAPI(title="NearYou Message Generator (HF)")
 
 @app.get("/health")
 async def health():
@@ -96,7 +103,6 @@ async def health():
 @app.post("/generate", response_model=GenerateResponse)
 async def generate(req: GenerateRequest):
     try:
-        # Costruzione del prompt
         prompt_text = PROMPT_TMPL.format(
             age=req.user.age,
             profession=req.user.profession,
@@ -105,8 +111,9 @@ async def generate(req: GenerateRequest):
             category=req.poi.category,
             description=req.poi.description,
         )
-        # Generazione locale
         result = call_llm(prompt_text)
         return GenerateResponse(message=result)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

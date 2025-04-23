@@ -1,29 +1,23 @@
 # .devcontainer/Dockerfile
-FROM python:3.11-slim-bookworm
+FROM python:3.10-slim
 
-# 1) Installa docker.io (se ti serve) e wget
-RUN apt-get update \
- && apt-get install -y docker.io wget \
- && rm -rf /var/lib/apt/lists/*
+# Aggiorna gli indici dei pacchetti e installa il client Docker
+RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/*
 
-# 2) Imposta la cartella di lavoro
+# Imposta la directory di lavoro
 WORKDIR /workspace
 
-# 3) Copia requirements e installa le dipendenze Python
+# Copia il file delle dipendenze e installa i pacchetti Python necessari
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 4) Crea la cartella per il modello e scaricalo
-RUN mkdir -p services/message_generator/models \
- && wget -q -O services/message_generator/models/ggml-gpt4all-j-v1.3-groovy.bin \
-    https://gpt4all.io/models/ggml-gpt4all-j-v1.3-groovy.bin
-
-# 5) Copia tutto il progetto
-COPY . /workspace
+# Copia la cartella degli script dall'host all'interno dell'immagine
+# Il contesto di build è la radice del repository (NearYou-Project)
+COPY . /workspace         
 COPY .devcontainer/scripts /workspace/.devcontainer/scripts
 
-# 6) Rendi eseguibile lo script di init di ClickHouse
+# Imposta i permessi di esecuzione per lo script di inizializzazione
 RUN chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh
 
-# 7) Default: tieni vivo il container
+# Mantieni il container in esecuzione (come default)
 CMD ["sleep", "infinity"]
