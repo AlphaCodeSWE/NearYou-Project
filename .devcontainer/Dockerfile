@@ -1,7 +1,7 @@
 # .devcontainer/Dockerfile
 FROM python:3.10-slim
 
-# 1) Installa tool di sistema necessari
+# 1) Installa tool di sistema
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         docker.io \
@@ -23,12 +23,12 @@ from gpt4all import GPT4All
 GPT4All(model="gpt4all-j")
 EOF
 
-# 5) Copia tutto il codice del progetto dentro /workspace
+# 5) Copia il resto del progetto
 COPY . /workspace
 COPY .devcontainer/scripts /workspace/.devcontainer/scripts
 
 # 6) Rendi eseguibili gli script di init
 RUN chmod +x /workspace/.devcontainer/scripts/*.sh
 
-# 7) Mantieni il container in vita (devcontainer)
+# 7) Comando di default (mantiene vivo il container)
 CMD ["sleep", "infinity"]
