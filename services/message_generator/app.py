@@ -8,11 +8,11 @@ from pydantic import BaseModel
 from gpt4all import GPT4All
 
 # --------------- Configuration -----------------
-# (le variabili PROVIDER, BASE_URL e API_KEY non servono più)
+# Le variabili e code per OpenAI/Groq non servono più, le lasciamo commentate:
 # PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()   # NON USATO
 # BASE_URL = os.getenv("OPENAI_API_BASE") or None         # NON USATO
 # API_KEY  = os.getenv("OPENAI_API_KEY")                  # NON USATO
-
+#
 # if PROVIDER in {"openai", "groq", "together", "fireworks"} and not API_KEY:
 #     raise RuntimeError("OPENAI_API_KEY mancante per il provider scelto")
 
@@ -43,13 +43,14 @@ Genera il messaggio in italiano:"""
 
 # --------------- LLM Invocation -----------------
 # Carica il modello GPT4All “j” (leggero, ~200 MB)
-llm_local = GPT4All(model="gpt4all-j")
+# ATTENZIONE: la firma corretta è `model_name`, non `model`
+llm_local = GPT4All(model_name="gpt4all-j")
 
 def call_llm(prompt: str) -> str:
     """
     Genera completamento locale con gpt4all-j.
     """
-    # .generate restituisce prompt + completamento
+    # .generate restituisce l'intero testo (prompt + completamento)
     full_text = llm_local.generate(prompt, max_tokens=50)
     # Rimuove la parte di prompt, lasciando solo il completamento
     return full_text[len(prompt):].strip()
