@@ -1,3 +1,4 @@
+gpt4all
 kafka-python
 clickhouse-driver
 Faker
