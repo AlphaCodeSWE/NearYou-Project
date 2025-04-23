@@ -33,3 +33,13 @@ MESSAGE_GENERATOR_URL = os.getenv(
     "MESSAGE_GENERATOR_URL",
     "http://message-generator:8001/generate",
 )
+
+
+# Google Maps JS API Key
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
+
+# Firebase App Check config
+FIREBASE_API_KEY            = os.getenv("FIREBASE_API_KEY", "")
+FIREBASE_AUTH_DOMAIN        = os.getenv("FIREBASE_AUTH_DOMAIN", "")
+FIREBASE_PROJECT_ID         = os.getenv("FIREBASE_PROJECT_ID", "")
+FIREBASE_RECAPTCHA_SITE_KEY = os.getenv("FIREBASE_RECAPTCHA_SITE_KEY", "")
