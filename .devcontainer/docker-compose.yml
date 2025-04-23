@@ -141,6 +141,7 @@ services:
       - ..:/workspace:cached
     environment:
       - HF_API_TOKEN=${HF_API_TOKEN}
+      - HF_MODEL=${HF_MODEL:-gpt2}
     ports:
       - "8001:8001"
     healthcheck:

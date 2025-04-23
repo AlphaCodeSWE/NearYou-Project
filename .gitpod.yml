@@ -1,11 +1,18 @@
 image: gitpod/workspace-full
 
 tasks:
-  - name: "Load .env and start Docker"
+  - name: "Sync HF secrets and start Docker"
     command: |
+      # Sincronizza i secrets da GitHub in Gitpod
+      gp secret sync-from-github HF_API_TOKEN
+      gp secret sync-from-github HF_MODEL || true
+
+      # Ricarica .env (se presente) per eventuali variabili locali
       if [ -f .env ]; then
         export $(grep -v '^#' .env | xargs)
       fi
+
+      # Avvia i container
       docker-compose -f .devcontainer/docker-compose.yml up -d
 
 ports:
