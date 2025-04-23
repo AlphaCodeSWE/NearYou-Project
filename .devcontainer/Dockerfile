@@ -1,23 +1,33 @@
 # .devcontainer/Dockerfile
 FROM python:3.10-slim
 
-# Aggiorna gli indici dei pacchetti e installa il client Docker
-RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/*
+# 1) Aggiorna gli indici dei pacchetti e installa i tool di sistema
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      docker.io \                # per docker-in-docker in devcontainer
+      curl \                     # utile per healthchecks e test API
+      postgresql-client \        # psql per connetterti a Postgres in dev
+      build-essential \         # gcc, g++, make
+      python3-dev \             # header Python per moduli compilati
+      libssl-dev \              # per cryptography
+      libffi-dev \              # per cryptography e altri wrapper FF
+    && rm -rf /var/lib/apt/lists/*
 
-# Imposta la directory di lavoro
+# 2) Imposta la directory di lavoro
 WORKDIR /workspace
 
-# Copia il file delle dipendenze e installa i pacchetti Python necessari
+# 3) Copia e installa le dipendenze Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia la cartella degli script dall'host all'interno dell'immagine
-# Il contesto di build è la radice del repository (NearYou-Project)
-COPY . /workspace         
+# 4) Copia tutto il codice in /workspace
+COPY . /workspace
 COPY .devcontainer/scripts /workspace/.devcontainer/scripts
 
-# Imposta i permessi di esecuzione per lo script di inizializzazione
-RUN chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh
+# 5) Imposta i permessi per gli script di inizializzazione
+RUN chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh \
+    /workspace/.devcontainer/scripts/init_postgres.sh \
+    /workspace/.devcontainer/scripts/entrypoint.sh
 
-# Mantieni il container in esecuzione (come default)
+# 6) Default command
 CMD ["sleep", "infinity"]

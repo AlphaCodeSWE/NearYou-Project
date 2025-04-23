@@ -332,11 +332,11 @@ services:
 
   dashboard:
     build:
-      context: .
-      dockerfile: .devcontainer/Dockerfile
+      context: ..                             # risali di un livello alla root del repo
+      dockerfile: .devcontainer/Dockerfile   # percorso relativo al context
     command: uvicorn services.dashboard.main:app --host 0.0.0.0 --port 8002
     volumes:
-      - .:/workspace:cached
+      - ..:/workspace:cached                  # monta tutta la root in /workspace
     ports:
       - "8002:8002"
     depends_on:
