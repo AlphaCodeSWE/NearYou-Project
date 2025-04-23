@@ -107,4 +107,4 @@ while True:
         logger.info("Batch di %d messaggi inviato", BATCH_SIZE)
         batch_counter = 0
 
-    time.sleep(0.2)          # ~5 messaggi al secondo
+    time.sleep(0.8)          # ~8 messaggi al secondo
