@@ -1,18 +1,30 @@
 image: gitpod/workspace-full
 
 tasks:
-  - name: "Sync HF secrets and start Docker"
+  # Task 1: sincronizzazione dei secrets e caricamento delle variabili locali
+  - name: "Sync HF secrets & load local env"
     command: |
-      # Sincronizza i secrets da GitHub in Gitpod
+      # 1) Sincronizza i secrets da GitHub in Gitpod
       gp secret sync-from-github HF_API_TOKEN
       gp secret sync-from-github HF_MODEL || true
 
-      # Ricarica .env (se presente) per eventuali variabili locali
+      # 2) Fail fast se manca il token
+      if [ -z "$HF_API_TOKEN" ]; then
+        echo "❌ HF_API_TOKEN non disponibile, abort."
+        exit 1
+      fi
+
+      # 3) Ricarica .env (se presente) per tutte le altre variabili
       if [ -f .env ]; then
         export $(grep -v '^#' .env | xargs)
       fi
 
-      # Avvia i container
+  # Task 2: avvio del docker-compose
+  - name: "Start Docker Compose"
+    command: |
+      # Avvia i container nella stessa shell,
+      # in modo che ereditino HF_API_TOKEN e le variabili da .env
+      docker-compose -f .devcontainer/docker-compose.yml down --remove-orphans
       docker-compose -f .devcontainer/docker-compose.yml up -d
 
 ports:
