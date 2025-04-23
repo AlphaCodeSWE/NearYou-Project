@@ -9,7 +9,6 @@ fastapi
 uvicorn
 langchain
 openai
-uvicorn
 httpx
-requests  
 langchain-community
+aiofiles
