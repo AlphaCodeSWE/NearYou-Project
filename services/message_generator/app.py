@@ -1,5 +1,3 @@
-# services/message_generator/app.py
-
 import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -8,7 +6,7 @@ from pydantic import BaseModel
 from gpt4all import GPT4All
 
 # --------------- Configuration -----------------
-# Le variabili e code per OpenAI/Groq non servono più, le lasciamo commentate:
+# Le variabili e il codice per OpenAI/Groq non servono più, le lasciamo commentate:
 # PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()   # NON USATO
 # BASE_URL = os.getenv("OPENAI_API_BASE") or None         # NON USATO
 # API_KEY  = os.getenv("OPENAI_API_KEY")                  # NON USATO
@@ -42,13 +40,16 @@ Genera il messaggio in italiano:"""
 # )
 
 # --------------- LLM Invocation -----------------
-# Carica il modello GPT4All “j” (leggero, ~200 MB)
-# ATTENZIONE: la firma corretta è `model_name`, non `model`
-llm_local = GPT4All(model_name="gpt4all-j")
+# Carica il modello GPT4All “j-v1.3-groovy” (~200 MB) e scaricalo se mancante
+llm_local = GPT4All(
+    model_name="gpt4all-j-v1.3-groovy",
+    allow_download=True,
+    verbose=False
+)
 
 def call_llm(prompt: str) -> str:
     """
-    Genera completamento locale con gpt4all-j.
+    Genera completamento locale con gpt4all-j-v1.3-groovy.
     """
     # .generate restituisce l'intero testo (prompt + completamento)
     full_text = llm_local.generate(prompt, max_tokens=50)
