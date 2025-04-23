@@ -139,8 +139,8 @@ services:
     working_dir: /workspace
     volumes:
       - ..:/workspace:cached
-    env_file:
-      - .env
+    environment:
+      - HF_API_TOKEN=${HF_API_TOKEN}
     ports:
       - "8001:8001"
     healthcheck:
