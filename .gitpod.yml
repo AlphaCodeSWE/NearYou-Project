@@ -1,26 +1,23 @@
 image: gitpod/workspace-full
 
 tasks:
-  - name: "Sync GROQ secret & start stack"
+  - name: "Load GROQ_API_KEY & start stack"
     command: |
-      # 1) Sincronizza il secret da GitHub in Gitpod
-      gp secret sync-from-github GROQ_API_KEY || true
+      # 1) Leggi il secret da Gitpod
+      export GROQ_API_KEY="$(gp secret get GROQ_API_KEY)"
 
-      # 2) Abort se manca il token
+      # 2) Fail fast se manca
       if [ -z "$GROQ_API_KEY" ]; then
-        echo "❌ GROQ_API_KEY non disponibile, abort."
+        echo "❌ GROQ_API_KEY mancante in Gitpod"
         exit 1
       fi
 
-      # 3) Esporta la variabile nella shell corrente
-      export GROQ_API_KEY
-
-      # 4) carica altre variabili dal file .env
+      # 3) Carica altre variabili da .env (se esiste)
       if [ -f .env ]; then
         export $(grep -v '^#' .env | xargs)
       fi
 
-      # 5) Avvia l’intero stack
+      # 4) Avvia il tuo stack Docker
       docker-compose -f .devcontainer/docker-compose.yml up -d
 
 ports:
