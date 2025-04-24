@@ -1,23 +1,55 @@
-# src/generate_users.py
 #!/usr/bin/env python3
 import random
 import time
-from datetime import datetime
+from datetime import datetime, date
 import logging
+
 from clickhouse_driver import Client
 from clickhouse_driver.errors import Error as CHError
 from faker import Faker
-from db_utils import wait_for_clickhouse_database
 
+from db_utils import wait_for_clickhouse_database
 from logger_config import setup_logging
+from configg import (
+    CLICKHOUSE_HOST, CLICKHOUSE_USER,
+    CLICKHOUSE_PASSWORD, CLICKHOUSE_PORT,
+    CLICKHOUSE_DATABASE
+)
+
 setup_logging()
 logger = logging.getLogger(__name__)
 
-from configg import CLICKHOUSE_HOST, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_PORT, CLICKHOUSE_DATABASE
-
 NUM_USERS = 5  # quanti utenti creare
+
+# ——————————————————————————————————————————————————————————————
+# Elenchi verosimili
+PROFESSIONS = [
+    "Ingegnere", "Medico", "Avvocato", "Insegnante",
+    "Commercialista", "Architetto", "Farmacista",
+    "Giornalista", "Psicologo", "Ricercatore"
+]
+
+INTERESTS = [
+    "caffè", "bicicletta", "arte", "cinema",
+    "fitness", "lettura", "fotografia", "musica",
+    "viaggi", "cucina", "sport", "tecnologia"
+]
+
+ITALIAN_CITIES = [
+    "Milano", "Roma", "Torino", "Napoli", "Bologna",
+    "Firenze", "Genova", "Venezia", "Verona", "Palermo"
+]
+
+EMAIL_DOMAINS = [
+    "gmail.com", "libero.it", "hotmail.it", "yahoo.it",
+    "alice.it", "tiscali.it"
+]
+
+# ——————————————————————————————————————————————————————————————
+# Faker per nome/cognome e telefono
 fake = Faker('it_IT')
 
+# ClickHouse client
 client = Client(
     host=CLICKHOUSE_HOST,
     user=CLICKHOUSE_USER,
@@ -30,58 +62,88 @@ def wait_for_table(table_name: str, timeout: int = 2, max_retries: int = 30) -> 
     retries = 0
     while retries < max_retries:
         try:
-            tables = client.execute("SHOW TABLES")
-            tables_list = [t[0] for t in tables]
-            if table_name in tables_list:
+            tables = [t[0] for t in client.execute("SHOW TABLES")]
+            if table_name in tables:
                 logger.info("La tabella '%s' è disponibile.", table_name)
                 return True
-            else:
-                logger.info("La tabella '%s' non è ancora disponibile. Riprovo...", table_name)
         except CHError as e:
-            logger.error("Errore durante il controllo della tabella '%s': %s", table_name, e)
+            logger.error("Errore controllo tabella '%s': %s", table_name, e)
         time.sleep(timeout)
         retries += 1
-    raise Exception(f"La tabella '{table_name}' non è stata trovata dopo {max_retries} tentativi.")
+    raise Exception(f"Tabella '{table_name}' non trovata dopo {max_retries} tentativi.")
+
+def calculate_age(birthdate: date) -> int:
+    today = date.today()
+    return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 
 def generate_user_record(user_id: int) -> tuple:
-    gender = random.choice(["Male", "Female"])
+    # Nome e cognome verosimili
+    full_name = fake.name()
+    first, last = full_name.split(" ", 1)
+    # Username: first + last lowercase
+    username = (first + last).lower().replace("'", "").replace(" ", "")
+    # Email basata su username e dominio casuale
+    email = f"{username}@{random.choice(EMAIL_DOMAINS)}"
+    # Sesso e data di nascita Faker
+    profile = fake.simple_profile()
+    gender = "Male" if profile["sex"] == "M" else "Female"
+    birthdate = profile["birthdate"]
+    age = calculate_age(birthdate)
+
+    # Campi da elenchi definiti
+    profession = random.choice(PROFESSIONS)
+    interests = ", ".join(random.sample(INTERESTS, k=3))
+    country = "Italia"
+    city = random.choice(ITALIAN_CITIES)
+
+    # Contatto e credenziali
+    phone_number = fake.phone_number()
+    password = fake.password(length=12, special_chars=True, digits=True, upper_case=True, lower_case=True)
+
+    # Tipo utente
     user_type = random.choice(["free", "premium"])
+
+    # Timestamp di registrazione
+    registration_time = datetime.now()
+
     return (
         user_id,
-        fake.user_name(),
-        fake.name(),
-        fake.email(),
-        fake.phone_number(),
-        fake.password(length=10),
+        username,
+        full_name,
+        email,
+        phone_number,
+        password,
         user_type,
         gender,
-        random.randint(18, 80),
-        fake.job(),
-        ", ".join(fake.words(nb=3)),
-        fake.country(),
-        fake.city(),
-        datetime.now()  # Timestamp di registrazione
+        age,
+        profession,
+        interests,
+        country,
+        city,
+        registration_time
     )
 
-def insert_users(num_users: int) -> None:
-    logger.info("Generazione di %d record utenti...", num_users)
-    users = [generate_user_record(i+1) for i in range(num_users)]
-    query = '''
+def insert_users(num_users: int):
+    logger.info("Generazione di %d utenti verosimili...", num_users)
+    records = [generate_user_record(i+1) for i in range(num_users)]
+    query = """
         INSERT INTO users (
-            user_id, username, full_name, email, phone_number, password, user_type,
-            gender, age, profession, interests, country, city, registration_time
+            user_id, username, full_name, email, phone_number,
+            password, user_type, gender, age, profession,
+            interests, country, city, registration_time
         ) VALUES
-    '''
+    """
     try:
-        client.execute(query, users)
-        logger.info("Inseriti con successo %d utenti nella tabella 'users'.", num_users)
+        client.execute(query, records)
+        logger.info("Inseriti %d utenti nella tabella 'users'.", num_users)
     except CHError as e:
-        logger.error("Errore durante l'inserimento dei record utenti: %s", e)
+        logger.error("Errore inserimento utenti: %s", e)
 
 if __name__ == '__main__':
-    # Attendi che ClickHouse sia pronto e che la tabella 'users' esista
+    # 1) Attendi che il DB e la tabella siano pronti
     wait_for_clickhouse_database(client, CLICKHOUSE_DATABASE)
     wait_for_table("users")
-    logger.info("Inizio generazione e inserimento dei dati utenti realistici...")
+
+    # 2) Inserisci i profili
     insert_users(NUM_USERS)
     logger.info("Operazione completata con successo.")
