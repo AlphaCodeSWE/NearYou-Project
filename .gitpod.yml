@@ -13,8 +13,8 @@ tasks:
         exit 1
       fi
 
-      # Esporta la variabile attesa dal tuo codice
-      export OPENAI_API_KEY="$GROQ_API_KEY"
+      # Esporta la variabile direttamente per il codice
+      export GROQ_API_KEY="$GROQ_API_KEY"
 
       # Ricarica .env (se presente) per tutte le altre variabili
       if [ -f .env ]; then
