@@ -6,7 +6,7 @@ from transformers import pipeline, logging as hf_logging
 # —– SETUP LOGGING —–
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("message-generator")
-hf_logging.set_verbosity_error()
+hf_logging.set_verbosity_error()  # silenzia i warning di transformers
 
 # —– PAYLOAD CLASSES —–
 class User(BaseModel):
@@ -26,7 +26,7 @@ class GenerateRequest(BaseModel):
 class GenerateResponse(BaseModel):
     message: str
 
-# —– PROMPT —–
+# —– PROMPT TEMPLATE —–
 PROMPT_TMPL = """Sei un sistema di advertising che crea un messaggio conciso e coinvolgente.
 Utente:
 - Età: {age}
@@ -44,15 +44,13 @@ Condizioni:
 
 Genera il messaggio in italiano:"""
 
-# —– CARICAMENTO MODELLO MISTRAL-7B —–
-logger.info("Caricamento modello Mistral-7B…")
+# —– CARICAMENTO MISTRAL-7B-INSTRUCT (GPTQ) —–
+logger.info("Caricamento modello TheBloke/Mistral-7B-Instruct-v0.1-GPTQ…")
 text_gen = pipeline(
     "text-generation",
-    model="mistralai/Mistral-7B-Instruct",    # repository su HF
-    device_map="auto",                        # mappa su GPU/CPU automaticamente
-    load_in_8bit=True,                        # quantizzazione 8-bit se supportata
-    torch_dtype="auto",                       # sceglie il dtype migliore
-    trust_remote_code=True                    # necessario per alcuni custom model
+    model="TheBloke/Mistral-7B-Instruct-v0.1-GPTQ",
+    device_map="auto",
+    trust_remote_code=True
 )
 
 # —– FASTAPI SETUP —–
@@ -64,6 +62,7 @@ async def health():
 
 @app.post("/generate", response_model=GenerateResponse)
 async def generate(req: GenerateRequest):
+    # Costruisci il prompt dal template
     prompt = PROMPT_TMPL.format(
         age=req.user.age,
         profession=req.user.profession,
@@ -72,17 +71,22 @@ async def generate(req: GenerateRequest):
         category=req.poi.category,
         description=req.poi.description or "-"
     )
+    logger.info(f"Prompt: {prompt!r}")
+
     try:
+        # Generazione con beam search per maggiore coerenza
         out = text_gen(
             prompt,
-            max_new_tokens=40,
+            max_new_tokens=30,
             do_sample=False,
             num_beams=4,
             early_stopping=True,
             return_full_text=False
         )
         message = out[0]["generated_text"].strip()
+        logger.info(f"Generated message: {message!r}")
         return GenerateResponse(message=message)
+
     except Exception as e:
-        logger.exception("Errore generazione con Mistral")
+        logger.exception("Errore generazione con Mistral-7B")
         raise HTTPException(status_code=500, detail="Errore interno al server")
