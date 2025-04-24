@@ -12,3 +12,12 @@ openai
 httpx
 langchain-community
 aiofiles
+
+# per OSRM-based routing nel producer
+polyline
+
+# per parsing GPX (se in futuro lo riutilizzi)
+gpxpy
+
+# per calcolo distanza haversine nel consumer
+haversine
