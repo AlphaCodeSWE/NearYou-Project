@@ -3,16 +3,15 @@
 <head>
   <meta charset="utf-8">
   <title>NearYou Live Dashboard</title>
-  <link rel="stylesheet"
-        href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
-    html, body, #map { height: 100%; margin:0; padding:0; }
+    html,body,#map{height:100%;margin:0;padding:0}
     #info{
-      position:absolute; top:10px; left:50%;
+      position:absolute;top:10px;left:50%;
       transform:translateX(-50%);
       background:rgba(255,255,255,0.85);
-      padding:8px 12px; border-radius:4px;
-      font-family:sans-serif; z-index:1000;
+      padding:8px 12px;border-radius:4px;
+      font-family:sans-serif;z-index:1000;
     }
   </style>
 </head>
@@ -22,54 +21,53 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    /* 1 — mappa OSM su Milano */
-    const map = L.map('map').setView([45.4642, 9.19], 14);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // mappa OSM
+    const map = L.map('map').setView([45.4642,9.19], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
       attribution:'© OpenStreetMap contributors'
     }).addTo(map);
 
-    /* 2 — icona bicicletta */
+    // icona bici
     const bikeIcon = L.icon({
       iconUrl:'https://maps.google.com/mapfiles/kml/shapes/cycling.png',
-      iconSize:[32,32],
-      iconAnchor:[16,32]
+      iconSize:[32,32], iconAnchor:[16,32]
     });
 
-    /* markers[user_id] → Leaflet marker */
+    // markers per utente
     const markers = {};
     const popup   = L.popup();
+    let firstRun  = true;
 
-    /* 3 — polling ogni 2 s */
-    setInterval(async () => {
+    // polling 2 s
+    setInterval(async ()=>{
       try{
-        const res  = await fetch('/api/positions');   // ← backend FastAPI
-        const data = await res.json();
+        const res = await fetch('/api/positions');
+        const {positions} = await res.json();
 
         document.getElementById('info').textContent =
-          `Utenti attivi: ${data.positions.length}`;
+          `Utenti attivi: ${positions.length}`;
 
-        data.positions.forEach(u => {
-          /* crea / sposta marker */
-          if (!markers[u.user_id]){
-            markers[u.user_id] =
+        positions.forEach(u=>{
+          if(!markers[u.user_id]){
+            markers[u.user_id]=
               L.marker([u.latitude,u.longitude],{icon:bikeIcon}).addTo(map);
           }else{
             markers[u.user_id].setLatLng([u.latitude,u.longitude]);
           }
 
-          /* popup promo, se presente */
-          if (u.message){
-            popup
-              .setLatLng([u.latitude,u.longitude])
-              .setContent(`<strong>Promo:</strong> ${u.message}`)
-              .openOn(map);
+          if(firstRun){
+            map.setView([u.latitude,u.longitude],15);
+            firstRun=false;
+          }
+
+          if(u.message){
+            popup.setLatLng([u.latitude,u.longitude])
+                 .setContent(`<strong>Promo:</strong> ${u.message}`)
+                 .openOn(map);
           }
         });
-
-      }catch(err){
-        console.error('Errore fetch posizioni:', err);
-      }
-    }, 2000);  // 2 s ≈ “real-time” per una demo
+      }catch(e){console.error('fetch posizioni:',e)}
+    },2000);
   </script>
 </body>
 </html>
