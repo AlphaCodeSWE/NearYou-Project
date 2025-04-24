@@ -8,6 +8,7 @@ in ClickHouse. Un messaggio al minuto.
 import json
 import random
 import time
+import logging
 from datetime import datetime, timezone
 
 from kafka import KafkaProducer
