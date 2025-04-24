@@ -2,12 +2,14 @@ version: "3.9"
 
 services:
   osrm-milano:
-    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    build:
+      context: ..                            # la root del progetto
+      dockerfile: .devcontainer/Dockerfile.osrm
     environment:
       - PBF_URL=${PBF_URL}
     volumes:
-      - ./data:/data:rw
-      - ./scripts/init_osrm.sh:/init_osrm.sh:ro
+      - ../data:/data:rw                     # /workspace/data → /data in container
+      - ../scripts/init_osrm.sh:/init_osrm.sh:ro
     entrypoint: ["bash", "/init_osrm.sh"]
     ports:
       - "5000:5000"

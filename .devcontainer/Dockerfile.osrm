@@ -1,0 +1,12 @@
+# .devcontainer/Dockerfile.osrm
+FROM ghcr.io/project-osrm/osrm-backend:v5.27.1
+
+# Passa a root per installare curl
+USER root
+
+RUN apt-get update \
+ && apt-get install -y curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# Torna all'utente osrm
+USER osrm
