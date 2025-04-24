@@ -3,17 +3,16 @@ version: "3.9"
 services:
   osrm-milano:
     build:
-      context: ..                                # la root del repo
-      dockerfile: .devcontainer/Dockerfile.osrm
+      context: ..                                # root repo
+      dockerfile: .devcontainer/Dockerfile.osrm  # questo nuovo Dockerfile
     environment:
-      - PBF_URL=${PBF_URL}
+      - PBF_URL=https://download.geofabrik.de/europe/italy/nord-ovest-latest.osm.pbf
     volumes:
-      # host  (relativo a .devcontainer)     →   container
-      - ./scripts/init_osrm.sh:/opt/init_osrm.sh
+      - ./scripts/init-osrm.sh:/opt/init_osrm.sh
       - ../data:/data:rw
     entrypoint:
-      - "bash"
-      - "-c"
+      - bash
+      - -c
       - |
         chmod +x /opt/init_osrm.sh && /opt/init_osrm.sh
     ports:
