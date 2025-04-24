@@ -9,7 +9,7 @@ services:
       - PBF_URL=${PBF_URL}
     volumes:
       # host  (relativo a .devcontainer)     →   container
-      - ./scripts/init_osrm.sh:/opt/init_osrm.sh:ro
+      - ./scripts/init_osrm.sh:/opt/init_osrm.sh
       - ../data:/data:rw
     entrypoint:
       - "bash"
