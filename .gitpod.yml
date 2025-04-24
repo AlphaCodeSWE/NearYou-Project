@@ -1,33 +1,21 @@
 image: gitpod/workspace-full
 
 tasks:
-  - name: "Load GROQ_API_KEY & start stack"
+  - name: "Load .env and start Docker"
     command: |
-      # 1) Leggi il secret da Gitpod
-      export GROQ_API_KEY="$(gp secret get GROQ_API_KEY)"
-
-      # 2) Fail fast se manca
-      if [ -z "$GROQ_API_KEY" ]; then
-        echo "❌ GROQ_API_KEY mancante in Gitpod"
-        exit 1
-      fi
-
-      # 3) Carica altre variabili da .env (se esiste)
       if [ -f .env ]; then
         export $(grep -v '^#' .env | xargs)
       fi
-
-      # 4) Avvia il tuo stack Docker
       docker-compose -f .devcontainer/docker-compose.yml up -d
 
 ports:
-  - port: 9093   # Kafka SSL
+  - port: 9093
     onOpen: open-preview
-  - port: 2181   # Zookeeper
+  - port: 2181
     onOpen: ignore
-  - port: 8080   # Airflow Webserver
+  - port: 8080
     onOpen: open-preview
-  - port: 8081   # NiFi
+  - port: 8081
     onOpen: open-preview
-  - port: 1883   # HiveMQ
+  - port: 1883
     onOpen: ignore
