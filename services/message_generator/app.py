@@ -44,17 +44,49 @@ Condizioni:
 
 Genera il messaggio in italiano:"""
 
-# —– CARICAMENTO MISTRAL-7B-INSTRUCT (GPTQ) —–
-logger.info("Caricamento modello TheBloke/Mistral-7B-Instruct-v0.1-GPTQ…")
-text_gen = pipeline(
-    "text-generation",
-    model="TheBloke/Mistral-7B-Instruct-v0.1-GPTQ",
-    device_map="auto",
-    trust_remote_code=True
-)
+# —– MODELLO SEQUENZIALE SU CPU —–
+logger.info("Tentativo caricamento modello GGUF... (CPU)")
+try:
+    text_gen = pipeline(
+        "text-generation",
+        model="TheBloke/Mistral-7B-Instruct-GGUF",
+        device_map="cpu",
+        trust_remote_code=True
+    )
+    logger.info("Utilizzato modello GGUF su CPU")
+except Exception:
+    logger.warning("GGUF non disponibile, tentativo checkpoint GPTQ CPU...")
+    try:
+        text_gen = pipeline(
+            "text-generation",
+            model="TheBloke/Mistral-7B-Instruct-v0.1-AWQ",  # AWQ CPU variant
+            device_map="cpu",
+            trust_remote_code=True
+        )
+        logger.info("Utilizzato modello AWQ su CPU")
+    except Exception:
+        logger.warning("AWQ non disponibile, tentativo checkpoint GPTQ CPU...")
+        try:
+            text_gen = pipeline(
+                "text-generation",
+                model="TheBloke/Mistral-7B-Instruct-v0.1-GPTQ",
+                device_map="cpu",
+                trust_remote_code=True
+            )
+            logger.info("Utilizzato modello GPTQ su CPU")
+        except Exception:
+            logger.warning("GPTQ non disponibile, ricaduta su modello full (CPU, heavy)")
+            text_gen = pipeline(
+                "text-generation",
+                model="TheBloke/Mistral-7B-Instruct-v0.1",
+                device_map="cpu",
+                torch_dtype="auto",
+                trust_remote_code=True
+            )
+            logger.info("Utilizzato modello full su CPU")
 
 # —– FASTAPI SETUP —–
-app = FastAPI(title="NearYou Mistral-7B Message Generator")
+app = FastAPI(title="NearYou Mistral-7B CPU Message Generator")
 
 @app.get("/health")
 async def health():
@@ -62,7 +94,6 @@ async def health():
 
 @app.post("/generate", response_model=GenerateResponse)
 async def generate(req: GenerateRequest):
-    # Costruisci il prompt dal template
     prompt = PROMPT_TMPL.format(
         age=req.user.age,
         profession=req.user.profession,
@@ -72,9 +103,7 @@ async def generate(req: GenerateRequest):
         description=req.poi.description or "-"
     )
     logger.info(f"Prompt: {prompt!r}")
-
     try:
-        # Generazione con beam search per maggiore coerenza
         out = text_gen(
             prompt,
             max_new_tokens=30,
@@ -86,7 +115,6 @@ async def generate(req: GenerateRequest):
         message = out[0]["generated_text"].strip()
         logger.info(f"Generated message: {message!r}")
         return GenerateResponse(message=message)
-
-    except Exception as e:
-        logger.exception("Errore generazione con Mistral-7B")
+    except Exception:
+        logger.exception("Errore generazione con modello CPU")
         raise HTTPException(status_code=500, detail="Errore interno al server")
