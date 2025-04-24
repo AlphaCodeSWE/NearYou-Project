@@ -1,23 +1,25 @@
+# .gitpod.yml
 image: gitpod/workspace-full
+
+# 1) Dichiariamo la variabile senza default: Gitpod mostrerà un prompt per inserirla
+variables:
+  GROQ_API_KEY:
 
 tasks:
   - name: "Load GROQ_API_KEY & start stack"
     command: |
-      # 1) Leggi il secret da Gitpod
-      export GROQ_API_KEY="$(gp secret get GROQ_API_KEY)"
-
-      # 2) Fail fast se manca
+      # 1) La variabile GROQ_API_KEY è già disponibile grazie al prompt
       if [ -z "$GROQ_API_KEY" ]; then
-        echo "❌ GROQ_API_KEY mancante in Gitpod"
+        echo "❌ Devi inserire il token Groq in fase di avvio del workspace."
         exit 1
       fi
 
-      # 3) Carica altre variabili da .env (se esiste)
+      # 2) Carica eventuali altre variabili da .env (se esiste)
       if [ -f .env ]; then
         export $(grep -v '^#' .env | xargs)
       fi
 
-      # 4) Avvia il tuo stack Docker
+      # 3) Avvia lo stack in background
       docker-compose -f .devcontainer/docker-compose.yml up -d
 
 ports:
