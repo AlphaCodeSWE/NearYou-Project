@@ -3,13 +3,13 @@ version: "3.9"
 services:
   osrm-milano:
     build:
-      context: ..                              # risali di un livello, alla root del repo
+      context: ..  
       dockerfile: .devcontainer/Dockerfile.osrm
     environment:
       - PBF_URL=${PBF_URL}
     volumes:
-      - ./script/init-osrm.sh:/init_osrm.sh:ro  # il tuo script in .devcontainer/script/
-      - ../data:/data:rw                       # monta data/ dalla root in /data
+      - ./script/init-osrm.sh:/init_osrm.sh:ro   # monta il file host .devcontainer/script/init-osrm.sh
+      - ../data:/data:rw
     entrypoint: ["bash", "/init_osrm.sh"]
     ports:
       - "5000:5000"
