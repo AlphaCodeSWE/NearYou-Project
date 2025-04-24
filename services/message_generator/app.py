@@ -6,7 +6,7 @@ from transformers import pipeline, logging as hf_logging
 # —– SETUP LOGGING —–
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("message-generator")
-hf_logging.set_verbosity_error()  # meno log dal transformer
+hf_logging.set_verbosity_error()
 
 # —– PAYLOAD CLASSES —–
 class User(BaseModel):
@@ -44,16 +44,19 @@ Condizioni:
 
 Genera il messaggio in italiano:"""
 
-# —– CARICAMENTO MODELLO LOCALE —–
-logger.info("Caricamento modello GPT-2 in locale…")
+# —– CARICAMENTO MODELLO MISTRAL-7B —–
+logger.info("Caricamento modello Mistral-7B…")
 text_gen = pipeline(
     "text-generation",
-    model="gpt2",
-    device=0 if hasattr(__import__("torch"), "cuda") else -1
+    model="mistralai/Mistral-7B-Instruct",    # repository su HF
+    device_map="auto",                        # mappa su GPU/CPU automaticamente
+    load_in_8bit=True,                        # quantizzazione 8-bit se supportata
+    torch_dtype="auto",                       # sceglie il dtype migliore
+    trust_remote_code=True                    # necessario per alcuni custom model
 )
 
 # —– FASTAPI SETUP —–
-app = FastAPI(title="NearYou Local Message Generator")
+app = FastAPI(title="NearYou Mistral-7B Message Generator")
 
 @app.get("/health")
 async def health():
@@ -72,15 +75,14 @@ async def generate(req: GenerateRequest):
     try:
         out = text_gen(
             prompt,
-            max_new_tokens=40,      # massimi nuovi token
-            do_sample=True,         # usa campionamento
-            temperature=0.7,        # temperatura per coerenza
-            top_p=0.85,             # filtro nuclei
-            repetition_penalty=1.2, # penalità per ripetizioni
+            max_new_tokens=40,
+            do_sample=False,
+            num_beams=4,
+            early_stopping=True,
             return_full_text=False
         )
         message = out[0]["generated_text"].strip()
         return GenerateResponse(message=message)
-    except Exception:
-        logger.exception("Errore generazione locale")
+    except Exception as e:
+        logger.exception("Errore generazione con Mistral")
         raise HTTPException(status_code=500, detail="Errore interno al server")
