@@ -139,7 +139,8 @@ services:
     working_dir: /workspace
     volumes:
       - ..:/workspace:cached
-    environment: []
+    env_file:
+      - .env
     ports:
       - "8001:8001"
     healthcheck:
