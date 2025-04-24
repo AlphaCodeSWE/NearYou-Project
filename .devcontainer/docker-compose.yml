@@ -124,9 +124,7 @@ services:
     volumes:
       - ..:/workspace:cached
       - /var/run/docker.sock:/var/run/docker.sock
-    command: >
-      bash -c "chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh \
-      && /workspace/.devcontainer/scripts/init_clickhouse.sh"
+    command: bash -c "chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh && /workspace/.devcontainer/scripts/init_clickhouse.sh"
     depends_on:
       - clickhouse
     restart: "no"
@@ -141,9 +139,8 @@ services:
     working_dir: /workspace
     volumes:
       - ..:/workspace:cached
-    environment:
-      - GROQ_API_KEY
-      - LLM_PROVIDER=groq
+    env_file:
+      - .env
     ports:
       - "8001:8001"
     healthcheck:
@@ -218,8 +215,7 @@ services:
       [
         "bash",
         "-c",
-        "chmod +x /docker-entrypoint-initdb.d/init_postgres.sh && \
-        /docker-entrypoint-initdb.d/init_postgres.sh"
+        "chmod +x /docker-entrypoint-initdb.d/init_postgres.sh && /docker-entrypoint-initdb.d/init_postgres.sh"
       ]
     restart: "no"
 
@@ -282,8 +278,7 @@ services:
       - "8080:8080"
     security_opt:
       - seccomp:unconfined
-    command:
-      ["webserver", "-p", "8080"]
+    command: ["webserver", "-p", "8080"]
     restart: unless-stopped
 
   airflow-scheduler:
@@ -308,8 +303,7 @@ services:
       - ./scripts/entrypoint.sh:/entrypoint.sh:ro
     security_opt:
       - seccomp:unconfined
-    command:
-      ["/bin/bash", "/entrypoint.sh"]
+    command: ["/bin/bash", "/entrypoint.sh"]
     restart: unless-stopped
 
   airflow-worker:
@@ -324,17 +318,16 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW_HOME=/opt/airflow_home
       - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/0
-      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgis/airflow
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CORE__WORKER_LOG_SERVER_BASE_URL=http://airflow-worker:8793
     volumes:
-      - airflow_data:/opt/airflow-home
-      - ../airflow/dags:/opt/airflow-home/dags
+      - airflow_data:/opt/airflow_home
+      - ../airflow/dags:/opt/airflow_home/dags
     ports:
       - "8793:8793"
     security_opt:
       - seccomp:unconfined
-    command:
-      ["celery", "worker"]
+    command: ["celery", "worker"]
     restart: unless-stopped
 
   dashboard:
