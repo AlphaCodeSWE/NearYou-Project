@@ -8,12 +8,15 @@ from langchain.schema import HumanMessage
 from langchain import PromptTemplate
 
 # --------------- Configuration -----------------
-PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()   # es. "groq"
-BASE_URL = os.getenv("OPENAI_API_BASE") or None          # es. https://api.groq.com/openai/v1
-API_KEY  = os.getenv("OPENAI_API_KEY")                   # la tua Groq API Key
+PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()
+BASE_URL = os.getenv("OPENAI_API_BASE") or None  # e.g. https://api.groq.com/openai/v1
+API_KEY = os.getenv("GROQ_API_KEY")              # il tuo token Groq Cloud
 
-if PROVIDER in {"openai", "groq", "together", "fireworks"} and not API_KEY:
-    raise RuntimeError("OPENAI_API_KEY mancante per il provider scelto")
+# Verifica configurazione corretta
+if PROVIDER != "groq":
+    raise RuntimeError("LLM_PROVIDER deve essere impostato a 'groq'.")
+if not API_KEY:
+    raise RuntimeError("Manca la variabile GROQ_API_KEY: inserisci il token Groq Cloud come secret in GitHub/Gitpod.")
 
 # --------------- Prompt Template -----------------
 PROMPT_TMPL = """Sei un sistema di advertising che crea un messaggio conciso e coinvolgente.
@@ -39,18 +42,15 @@ template = PromptTemplate(
 
 # --------------- LLM Invocation -----------------
 def call_llm(prompt: str) -> str:
-    if PROVIDER in {"openai", "groq", "together", "fireworks"}:
-        # modelli di produzione Groq Cloud supportati: gemma2-9b-it
-        model_name = "gpt-4o-mini" if PROVIDER == "openai" else "gemma2-9b-it"
-        llm = ChatOpenAI(
-            model=model_name,
-            temperature=0.7,
-            openai_api_key=API_KEY,
-            openai_api_base=BASE_URL,
-        )
-        return llm([HumanMessage(content=prompt)]).content.strip()
-
-    raise RuntimeError(f"Provider LLM non supportato: {PROVIDER}")
+    # Modello Groq Cloud
+    model_name = "gemma2-9b-it"
+    llm = ChatOpenAI(
+        model=model_name,
+        temperature=0.7,
+        openai_api_key=API_KEY,
+        openai_api_base=BASE_URL,
+    )
+    return llm([HumanMessage(content=prompt)]).content.strip()
 
 # --------------- FastAPI App -----------------
 class User(BaseModel):
@@ -91,3 +91,5 @@ async def generate(req: GenerateRequest):
         return GenerateResponse(message=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+

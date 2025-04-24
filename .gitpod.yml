@@ -1,20 +1,22 @@
 image: gitpod/workspace-full
 
 tasks:
-  # Task 1: sincronizzazione dei secrets e caricamento delle variabili locali
-  - name: "Sync HF secrets & load local env"
+  # Task 1: sincronizzazione del secret e caricamento delle variabili locali
+  - name: "Sync GROQ secret & load local env"
     command: |
-      # 1) Sincronizza i secrets da GitHub in Gitpod
-      gp secret sync-from-github HF_API_TOKEN
-      gp secret sync-from-github HF_MODEL || true
+      # Sincronizza il secret da GitHub in Gitpod
+      gp secret sync-from-github GROQ_API_KEY || true
 
-      # 2) Fail fast se manca il token
-      if [ -z "$HF_API_TOKEN" ]; then
-        echo "❌ HF_API_TOKEN non disponibile, abort."
+      # Fail fast se manca il token
+      if [ -z "$GROQ_API_KEY" ]; then
+        echo "❌ GROQ_API_KEY non disponibile, abort."
         exit 1
       fi
 
-      # 3) Ricarica .env (se presente) per tutte le altre variabili
+      # Esporta la variabile attesa dal tuo codice
+      export OPENAI_API_KEY="$GROQ_API_KEY"
+
+      # Ricarica .env (se presente) per tutte le altre variabili
       if [ -f .env ]; then
         export $(grep -v '^#' .env | xargs)
       fi
@@ -22,19 +24,16 @@ tasks:
   # Task 2: avvio del docker-compose
   - name: "Start Docker Compose"
     command: |
-      # Avvia i container nella stessa shell,
-      # in modo che ereditino HF_API_TOKEN e le variabili da .env
-      docker-compose -f .devcontainer/docker-compose.yml down --remove-orphans
       docker-compose -f .devcontainer/docker-compose.yml up -d
 
 ports:
-  - port: 9093
+  - port: 9093      # Kafka SSL
     onOpen: open-preview
-  - port: 2181
+  - port: 2181      # Zookeeper
     onOpen: ignore
-  - port: 8080
+  - port: 8080      # Airflow Webserver
     onOpen: open-preview
-  - port: 8081
+  - port: 8081      # NiFi
     onOpen: open-preview
-  - port: 1883
+  - port: 1883      # HiveMQ
     onOpen: ignore

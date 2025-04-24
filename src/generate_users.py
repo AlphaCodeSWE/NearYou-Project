@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 from configg import CLICKHOUSE_HOST, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_PORT, CLICKHOUSE_DATABASE
 
-NUM_USERS = 5  # Numero di utenti da generare (diminuisco a 5)
+NUM_USERS = 1  # Numero di utenti da generare (diminuisco a 1)
 fake = Faker('it_IT')
 
 client = Client(
