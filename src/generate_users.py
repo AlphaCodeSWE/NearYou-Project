@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 from configg import CLICKHOUSE_HOST, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_PORT, CLICKHOUSE_DATABASE
 
-NUM_USERS = 5  # Numero di utenti da generare (diminuisco a 5)
+NUM_USERS = 5  # quanti utenti creare
 fake = Faker('it_IT')
 
 client = Client(
@@ -79,9 +79,8 @@ def insert_users(num_users: int) -> None:
         logger.error("Errore durante l'inserimento dei record utenti: %s", e)
 
 if __name__ == '__main__':
-    # Attendi che il database ClickHouse sia disponibile
+    # Attendi che ClickHouse sia pronto e che la tabella 'users' esista
     wait_for_clickhouse_database(client, CLICKHOUSE_DATABASE)
-    # Attendi che la tabella 'users' sia disponibile
     wait_for_table("users")
     logger.info("Inizio generazione e inserimento dei dati utenti realistici...")
     insert_users(NUM_USERS)

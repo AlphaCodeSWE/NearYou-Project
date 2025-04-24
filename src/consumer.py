@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Consuma gli eventi GPS dal topic Kafka, chiama il micro‑servizio
-FastAPI (message‑generator) per creare un messaggio pubblicitario
-personalizzato e infine salva tutto in ClickHouse.
+Consuma gli eventi GPS dal topic Kafka, arricchisce ciascun evento
+trovando in PostGIS il negozio più vicino, chiama il micro-servizio
+FastAPI (message-generator) per creare un messaggio promozionale,
+e infine salva tutto in ClickHouse.
 """
 import json
 import logging
@@ -10,6 +11,7 @@ import random
 from datetime import datetime
 
 import httpx
+import psycopg2
 from kafka import KafkaConsumer
 from clickhouse_driver import Client
 from clickhouse_driver.errors import ServerException
@@ -23,6 +25,8 @@ from configg import (
     CLICKHOUSE_HOST, CLICKHOUSE_PORT,
     CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_DATABASE,
     MESSAGE_GENERATOR_URL,
+    POSTGRES_HOST, POSTGRES_PORT,
+    POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
 )
 
 # ---------- logging ----------------------------------------------------------
@@ -48,28 +52,36 @@ consumer = KafkaConsumer(
 )
 
 # ---------- ClickHouse client -----------------------------------------------
-client = Client(
+ch_client = Client(
     host=CLICKHOUSE_HOST,
     port=CLICKHOUSE_PORT,
     user=CLICKHOUSE_USER,
     password=CLICKHOUSE_PASSWORD,
     database=CLICKHOUSE_DATABASE,
 )
+wait_for_clickhouse_database(ch_client, CLICKHOUSE_DATABASE)
 
-wait_for_clickhouse_database(client, CLICKHOUSE_DATABASE)
+# ---------- Postgres client -------------------------------------------------
+pg_conn = psycopg2.connect(
+    host=POSTGRES_HOST,
+    port=POSTGRES_PORT,
+    user=POSTGRES_USER,
+    password=POSTGRES_PASSWORD,
+    dbname=POSTGRES_DB
+)
+pg_conn.autocommit = True
+pg_cur = pg_conn.cursor()
 
-
-def create_table_if_missing() -> None:
-    """Crea la tabella user_events se non esiste."""
+def create_ch_table_if_missing() -> None:
+    """Crea la tabella user_events in ClickHouse se non esiste."""
     try:
-        existing = [t[0] for t in client.execute("SHOW TABLES")]
+        existing = [t[0] for t in ch_client.execute("SHOW TABLES")]
     except ServerException as exc:
-        logger.error("Errore SHOW TABLES: %s", exc)
+        logger.error("Errore SHOW TABLES ClickHouse: %s", exc)
         existing = []
-
     if "user_events" not in existing:
-        logger.info("Creo tabella user_events …")
-        client.execute("""
+        logger.info("Creo tabella user_events in ClickHouse …")
+        ch_client.execute("""
             CREATE TABLE user_events (
                 event_id   UInt64,
                 event_time DateTime,
@@ -83,10 +95,9 @@ def create_table_if_missing() -> None:
             ORDER BY event_id
         """)
     else:
-        logger.info("Tabella user_events già esistente.")
+        logger.info("Tabella user_events già esistente in ClickHouse.")
 
-
-create_table_if_missing()
+create_ch_table_if_missing()
 
 # ---------- loop di consumo --------------------------------------------------
 logger.info("Consumer in ascolto sul topic: %s", KAFKA_TOPIC)
@@ -101,11 +112,29 @@ for message in consumer:
         logger.error("Timestamp non valido: %s", exc)
         continue
 
-    # 2) recupera info sul negozio dal messaggio
-    shop_name = data.get("shop_name", "Shop sconosciuto")
-    shop_category = data.get("shop_category", "varie")
+    lat = data.get("latitude")
+    lon = data.get("longitude")
 
-    # 3) chiamata al micro‑servizio LLM
+    # 2) trovo il negozio più vicino in Postgres/PostGIS
+    pg_cur.execute("""
+        SELECT
+            shop_name,
+            category,
+            ST_Distance(
+                geom::geography,
+                ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography
+            ) AS dist_m
+        FROM shops
+        ORDER BY dist_m
+        LIMIT 1;
+    """, (lon, lat))
+    row = pg_cur.fetchone()
+    if row:
+        shop_name, shop_category, poi_range = row
+    else:
+        shop_name, shop_category, poi_range = "Nessun negozio vicino", "", None
+
+    # 3) chiamata al micro-servizio LLM
     try:
         resp = httpx.post(
             MESSAGE_GENERATOR_URL,
@@ -118,7 +147,7 @@ for message in consumer:
                 "poi": {
                     "name": shop_name,
                     "category": shop_category,
-                    "description": "",
+                    "description": f"Distanza: {int(poi_range)} m" if poi_range is not None else ""
                 },
             },
             timeout=10.0,
@@ -134,18 +163,19 @@ for message in consumer:
         random.randint(1_000_000_000, 9_999_999_999),  # event_id
         ts_dt,
         data.get("user_id", 0),
-        data.get("latitude", 0.0),
-        data.get("longitude", 0.0),
-        0.0,                    # poi_range placeholder
+        lat,
+        lon,
+        poi_range or 0.0,
         shop_name,
         ad_text,
     )
 
-    client.execute(
+    ch_client.execute(
         """INSERT INTO user_events
            (event_id, event_time, user_id, latitude, longitude,
             poi_range, poi_name, poi_info)
            VALUES""",
         [event_tuple],
     )
-    logger.info("Evento %s inserito", event_tuple[0])
+    logger.info("Evento %s inserito (shop: %s, dist: %s m)",
+                event_tuple[0], shop_name, poi_range)

@@ -28,12 +28,11 @@ POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "nearypass")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "near_you_shops")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
 
-# URL del micro‑servizio che genera i messaggi
+# URL del micro-servizio che genera i messaggi
 MESSAGE_GENERATOR_URL = os.getenv(
     "MESSAGE_GENERATOR_URL",
     "http://message-generator:8001/generate",
 )
-
 
 # Google Maps JS API Key
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
@@ -43,3 +42,14 @@ FIREBASE_API_KEY            = os.getenv("FIREBASE_API_KEY", "")
 FIREBASE_AUTH_DOMAIN        = os.getenv("FIREBASE_AUTH_DOMAIN", "")
 FIREBASE_PROJECT_ID         = os.getenv("FIREBASE_PROJECT_ID", "")
 FIREBASE_RECAPTCHA_SITE_KEY = os.getenv("FIREBASE_RECAPTCHA_SITE_KEY", "")
+
+# ——————————————————————————————————————————————————————————————
+# OSRM self-hosted per routing bici su Milano
+# URL del servizio OSRM (container osrm-milano)
+OSRM_URL = os.getenv("OSRM_URL", "http://osrm-milano:5000")
+
+# Bounding-box di Milano per generazione punti casuali
+MILANO_MIN_LAT = float(os.getenv("MILANO_MIN_LAT", "45.40"))
+MILANO_MAX_LAT = float(os.getenv("MILANO_MAX_LAT", "45.50"))
+MILANO_MIN_LON = float(os.getenv("MILANO_MIN_LON", "9.10"))
+MILANO_MAX_LON = float(os.getenv("MILANO_MAX_LON", "9.30"))

@@ -11,13 +11,12 @@ WORKDIR /workspace
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia la cartella degli script dall'host all'interno dell'immagine
-# Il contesto di build è la radice del repository (NearYou-Project)
-COPY . /workspace         
+# Copia la cartella del progetto e gli script di inizializzazione
+COPY . /workspace
 COPY .devcontainer/scripts /workspace/.devcontainer/scripts
 
-# Imposta i permessi di esecuzione per lo script di inizializzazione
-RUN chmod +x /workspace/.devcontainer/scripts/init_clickhouse.sh
+# Imposta i permessi di esecuzione per tutti gli script .sh in /.devcontainer/scripts
+RUN chmod +x /workspace/.devcontainer/scripts/*.sh
 
 # Mantieni il container in esecuzione (come default)
 CMD ["sleep", "infinity"]

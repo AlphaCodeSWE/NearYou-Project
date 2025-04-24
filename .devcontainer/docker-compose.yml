@@ -1,6 +1,22 @@
 version: "3.9"
 
 services:
+  osrm-milano:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    environment:
+      - PBF_URL=${PBF_URL}
+    volumes:
+      - ./data:/data:rw
+      - ./scripts/init_osrm.sh:/init_osrm.sh:ro
+    entrypoint: ["bash", "/init_osrm.sh"]
+    ports:
+      - "5000:5000"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2.0"
+
   app:
     build:
       context: ..
@@ -158,8 +174,11 @@ services:
       - ..:/workspace:cached
       - ../certs:/workspace/certs:ro
     command: python3 /workspace/src/producer.py
+    env_file:
+      - .env
     depends_on:
       - kafka
+      - osrm-milano
     restart: "no"
 
   consumer:
@@ -278,7 +297,7 @@ services:
       - "8080:8080"
     security_opt:
       - seccomp:unconfined
-    command: ["webserver", "-p", "8080"]
+    command: ["webserver","-p","8080"]
     restart: unless-stopped
 
   airflow-scheduler:
@@ -303,7 +322,7 @@ services:
       - ./scripts/entrypoint.sh:/entrypoint.sh:ro
     security_opt:
       - seccomp:unconfined
-    command: ["/bin/bash", "/entrypoint.sh"]
+    command: ["/bin/bash","/entrypoint.sh"]
     restart: unless-stopped
 
   airflow-worker:
@@ -327,16 +346,16 @@ services:
       - "8793:8793"
     security_opt:
       - seccomp:unconfined
-    command: ["celery", "worker"]
+    command: ["celery","worker"]
     restart: unless-stopped
 
   dashboard:
     build:
-      context: ..                             # risali di un livello alla root del repo
-      dockerfile: .devcontainer/Dockerfile   # percorso relativo al context
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
     command: uvicorn services.dashboard.main:app --host 0.0.0.0 --port 8002
     volumes:
-      - ..:/workspace:cached                  # monta tutta la root in /workspace
+      - ..:/workspace:cached
     ports:
       - "8002:8002"
     depends_on:
