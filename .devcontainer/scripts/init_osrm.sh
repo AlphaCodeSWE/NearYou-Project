@@ -30,4 +30,4 @@ osrm-customize "${DATA_DIR}/milano.osrm"
 
 # 3) Avvio OSRM routing
 echo " Avvio OSRM routing…"
-exec osrm-routed --port 5000 "${DATA_DIR}/milano.osrm"
+exec osrm-routed --algorithm mld --port 5000 "${DATA_DIR}/milano.osrm"
