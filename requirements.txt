@@ -1,15 +1,33 @@
-gpt4all
-kafka-python
-clickhouse-driver
-Faker
-psycopg2-binary
-requests
-cryptography
-python-dotenv
+# Web framework
 fastapi
-uvicorn
-langchain
-openai
-httpx
-langchain-community
+uvicorn[standard]
 aiofiles
+
+# Data models & config
+pydantic
+python-dotenv
+
+# Hugging-Face local LLM
+transformers
+torch
+
+# LangChain & AI
+langchain
+langchain-community
+openai
+
+# HTTP clients
+requests
+httpx
+
+# Messaging & streaming
+kafka-python
+
+# Database drivers
+clickhouse-driver
+psycopg2-binary
+
+# Utilities
+Faker
+cryptography
+docker
