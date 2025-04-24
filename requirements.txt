@@ -1,36 +1,14 @@
-# Web framework
-fastapi
-uvicorn[standard]
-aiofiles
-
-# Data models & config
-pydantic
-python-dotenv
-
-# Hugging-Face local LLM
-transformers
-torch
-accelerate
-bitsandbytes
-optimum
-
-# LangChain & AI
-langchain
-langchain-community
-openai
-
-# HTTP clients
-requests
-httpx
-
-# Messaging & streaming
 kafka-python
-
-# Database drivers
 clickhouse-driver
-psycopg2-binary
-
-# Utilities
 Faker
+psycopg2-binary
+requests
 cryptography
-docker
+python-dotenv
+fastapi
+uvicorn
+langchain
+openai
+httpx
+langchain-community
+aiofiles
