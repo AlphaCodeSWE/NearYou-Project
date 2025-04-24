@@ -1,12 +1,11 @@
-# .devcontainer/Dockerfile.osrm
 FROM ghcr.io/project-osrm/osrm-backend:v5.27.1
 
-# 1) strumenti minimi
+# 1) Strumenti + certificati di root
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl git && \
+    apt-get install -y --no-install-recommends curl git ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# 2) clona (shallow) il repo OSRM e copia solo i profili bici
+# 2) Clona profilo ufficiale (shallow)
 RUN git clone --depth 1 --branch v5.27.1 https://github.com/Project-OSRM/osrm-backend.git /tmp/osrm && \
     mkdir -p /opt/profiles && \
     cp /tmp/osrm/profiles/bicycle.lua /opt/profiles/ && \
