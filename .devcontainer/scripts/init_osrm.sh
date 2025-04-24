@@ -7,13 +7,13 @@ PBF_FILE="${DATA_DIR}/milano.osm.pbf"
 # 1) Scarica il PBF se non esiste
 if [ ! -f "${PBF_FILE}" ]; then
   echo " Scarico PBF di Milano da ${PBF_URL}…"
-  wget -q -O "${PBF_FILE}" "${PBF_URL}"
+  curl -sSL "${PBF_URL}" -o "${PBF_FILE}"
   echo " Download completato."
 else
-  echo "ℹ  PBF già presente, salto il download."
+  echo " PBF già presente, salto il download."
 fi
 
-# 2) Preprocess OSRM (extract, partition, customize)
+# 2) Preprocess OSRM
 echo " Inizio preprocess OSRM…"
 osrm-extract -p /opt/profiles/bicycle.lua "${PBF_FILE}"
 osrm-partition "${DATA_DIR}/milano.osrm"
