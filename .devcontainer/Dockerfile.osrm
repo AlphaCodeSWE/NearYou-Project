@@ -1,7 +1,10 @@
-# .devcontainer/Dockerfile.osrm
 FROM ghcr.io/project-osrm/osrm-backend:v5.27.1
 
-# Installa curl come root
+# Installa curl
 RUN apt-get update \
-    && apt-get install -y curl \
-    && rm -rf /var/lib/apt/lists/*
+ && apt-get install -y curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# Aggiungi un profilo bici minimale
+RUN mkdir -p /opt/profiles
+COPY .devcontainer/profiles/bicycle.lua /opt/profiles/bicycle.lua
