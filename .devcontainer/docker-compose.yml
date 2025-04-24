@@ -3,25 +3,21 @@ version: "3.9"
 services:
   osrm-milano:
     build:
-      context: ..                              # root del progetto
+      context: ..                                # la root del repo
       dockerfile: .devcontainer/Dockerfile.osrm
     environment:
       - PBF_URL=${PBF_URL}
     volumes:
-      # monta .devcontainer/script/init-osrm.sh come /init_osrm.sh
-      - ./script/init-osrm.sh:/init_osrm.sh
+      # host  (relativo a .devcontainer)     →   container
+      - ./scripts/init_osrm.sh:/opt/init_osrm.sh:ro
       - ../data:/data:rw
     entrypoint:
       - "bash"
       - "-c"
-      - "chmod +x /init_osrm.sh && /init_osrm.sh"   # <── imposta i permessi e lancia
+      - |
+        chmod +x /opt/init_osrm.sh && /opt/init_osrm.sh
     ports:
       - "5000:5000"
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-          cpus: "2.0"
 
 
   app:
