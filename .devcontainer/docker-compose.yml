@@ -9,7 +9,7 @@ services:
       - PBF_URL=${PBF_URL}
     volumes:
       # monta .devcontainer/script/init-osrm.sh come /init_osrm.sh
-      - ./script/init-osrm.sh:/init_osrm.sh:ro
+      - ./script/init-osrm.sh:/init_osrm.sh
       - ../data:/data:rw
     entrypoint:
       - "bash"
