@@ -72,13 +72,15 @@ async def generate(req: GenerateRequest):
     try:
         out = text_gen(
             prompt,
-            max_new_tokens=50,
-            do_sample=True,
-            top_p=0.95,
+            max_new_tokens=40,      # massimi nuovi token
+            do_sample=True,         # usa campionamento
+            temperature=0.7,        # temperatura per coerenza
+            top_p=0.85,             # filtro nuclei
+            repetition_penalty=1.2, # penalità per ripetizioni
             return_full_text=False
         )
         message = out[0]["generated_text"].strip()
         return GenerateResponse(message=message)
-    except Exception as e:
+    except Exception:
         logger.exception("Errore generazione locale")
         raise HTTPException(status_code=500, detail="Errore interno al server")
