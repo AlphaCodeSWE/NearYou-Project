@@ -8,9 +8,9 @@ from langchain.schema import HumanMessage
 from langchain import PromptTemplate
 
 # --------------- Configuration -----------------
-PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()   # es. "groq"
-BASE_URL = os.getenv("OPENAI_API_BASE") or None          # es. https://api.groq.com/openai/v1
-API_KEY  = os.getenv("OPENAI_API_KEY")                   # la tua Groq API Key
+PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()   # . "groq"
+BASE_URL = os.getenv("OPENAI_API_BASE") or None          # https://api.groq.com/openai/v1
+API_KEY  = os.getenv("OPENAI_API_KEY")                   # 
 
 if PROVIDER in {"openai", "groq", "together", "fireworks"} and not API_KEY:
     raise RuntimeError("OPENAI_API_KEY mancante per il provider scelto")
