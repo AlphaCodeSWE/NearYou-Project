@@ -93,19 +93,17 @@ consumer = KafkaConsumer(
     value_deserializer=lambda m: json.loads(m.decode("utf-8")),
 )
 
-# 6) Verifica che il producer abbia già inviato almeno un messaggio
-logger.info("Controllo che il producer abbia pubblicato almeno un messaggio…")
+# 6) Verifica continua che il producer abbia già inviato almeno un messaggio
+logger.info("Controllo continuo che il producer abbia pubblicato almeno un messaggio…")
 tp = TopicPartition(KAFKA_TOPIC, 0)
-for _ in range(6):
-    begin = consumer.beginning_offsets([tp])[tp]
-    end   = consumer.end_offsets([tp])[tp]
-    if end > begin:
-        logger.info("Trovati %d messaggi sul topic %s → parto.", end - begin, KAFKA_TOPIC)
+while True:
+    beginning = consumer.beginning_offsets([tp])[tp]
+    end       = consumer.end_offsets([tp])[tp]
+    if end > beginning:
+        logger.info("Trovati %d messaggi sul topic %s → parto.", end - beginning, KAFKA_TOPIC)
         break
-    logger.warning("Nessun messaggio ancora (begin=%d, end=%d), riprovo tra 5s…", begin, end)
-    time.sleep(5)
-else:
-    raise RuntimeError(f"Il producer non sembra aver inviato nulla su {KAFKA_TOPIC} dopo 30s.")
+    logger.debug("Nessun messaggio ancora (begin=%d, end=%d), riprovo tra 1s…", beginning, end)
+    time.sleep(1)
 
 # ─── PostGIS connection ─────────────────────────────────────────────────────
 logger.info("Apro connessione a Postgres …")
