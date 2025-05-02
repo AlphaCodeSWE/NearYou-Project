@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timedelta
 
 from fastapi import FastAPI, Depends, HTTPException
-from fastapi.staticfiles import StaticFiles         # <- corretto
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from clickhouse_driver import Client
@@ -36,12 +36,13 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     token = create_access_token({"user_id": user["user_id"]})
     return {"access_token": token, "token_type": "bearer"}
 
+# Ora libero l'accesso a login+HTML
 @app.get("/dashboard/user", response_class=HTMLResponse)
-async def user_dashboard(token: str = Depends(oauth2_scheme)):
-    # Token già validato da oauth2_scheme
+async def user_dashboard():
     html_path = os.path.join(static_dir, "index_user.html")
     return HTMLResponse(open(html_path, encoding="utf8").read())
 
+# Questa rimane protetta
 @app.get("/api/user/positions")
 async def user_positions(current: dict = Depends(get_current_user)):
     uid = current["user_id"]
