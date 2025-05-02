@@ -45,9 +45,36 @@
       top: 0; bottom: 0; left: 0; right: 0;
       display: none;
     }
-    #welcome {
-      font-size: 1.2em;
-      margin-bottom: 16px;
+    /* banner di benvenuto in alto a sinistra */
+    #welcomeBanner {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(255,255,255,0.85);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 18px;
+      font-weight: bold;
+      z-index: 1000;
+      display: none;
+    }
+    /* tasto Esci in alto a destra */
+    #logoutButton {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: #dc3545;
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 1000;
+      display: none;
+    }
+    #logoutButton:hover {
+      background: #b02a37;
     }
   </style>
 </head>
@@ -61,13 +88,9 @@
     <div id="err" style="color:red; margin-top:8px;"></div>
   </div>
 
-  <div id="dashboard" class="hidden">
-    <div class="card" style="position: absolute; top: 16px; right: 16px; width: auto; padding: 12px;">
-      <div id="welcome">Benvenuto!</div>
-      <button id="logout" style="background:#dc3545; margin-top:0; padding:6px 12px; width:auto;">Esci</button>
-    </div>
-    <div id="map"></div>
-  </div>
+  <div id="welcomeBanner"></div>
+  <button id="logoutButton">Esci</button>
+  <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
@@ -94,12 +117,16 @@
         if (!res.ok) throw new Error(j.detail || 'Errore login');
         token = j.access_token;
 
-        // Mostra dashboard
+        // Nascondi form e mostra mappa + banner + logout
         document.getElementById('login-card').classList.add('hidden');
-        document.getElementById('dashboard').classList.remove('hidden');
+        document.getElementById('map').style.display = 'block';
 
-        // Saluto personalizzato
-        document.getElementById('welcome').textContent = `Benvenuto, ${username}!`;
+        const banner = document.getElementById('welcomeBanner');
+        banner.textContent = `Benvenuto, ${username}!`;
+        banner.style.display = 'block';
+
+        const logoutBtn = document.getElementById('logoutButton');
+        logoutBtn.style.display = 'block';
 
         initMap();
       } catch(e) {
@@ -107,30 +134,31 @@
       }
     };
 
-    document.getElementById('logout').onclick = () => {
+    document.getElementById('logoutButton').onclick = () => {
       token = "";
       document.getElementById('pass').value = "";
       document.getElementById('login-card').classList.remove('hidden');
-      document.getElementById('dashboard').classList.add('hidden');
+      document.getElementById('map').style.display = 'none';
+      document.getElementById('welcomeBanner').style.display = 'none';
+      document.getElementById('logoutButton').style.display = 'none';
     };
 
     let map, marker, popup, bikeIcon;
     function initMap() {
-      document.getElementById('map').style.display = 'block';
       map = L.map('map').setView([45.4642,9.19],14);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-        attribution:'© OpenStreetMap contributors'
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
       }).addTo(map);
       bikeIcon = L.icon({
-        iconUrl:'https://maps.google.com/mapfiles/kml/shapes/cycling.png',
-        iconSize:[32,32], iconAnchor:[16,32]
+        iconUrl: 'https://maps.google.com/mapfiles/kml/shapes/cycling.png',
+        iconSize: [32,32], iconAnchor: [16,32]
       });
       popup = L.popup();
       fetchPosition();
       setInterval(fetchPosition, 2000);
     }
 
-    async function fetchPosition(){
+    async function fetchPosition() {
       if (!token) return;
       const res = await fetch('/api/user/positions', {
         headers: { Authorization: `Bearer ${token}` }
