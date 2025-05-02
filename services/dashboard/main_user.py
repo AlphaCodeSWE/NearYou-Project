@@ -1,6 +1,5 @@
-# services/dashboard/main_user.py
-
 import os
+import logging
 from datetime import datetime, timedelta
 
 from fastapi import FastAPI, Depends, HTTPException
@@ -11,15 +10,28 @@ from clickhouse_driver import Client
 
 from .auth import authenticate_user, create_access_token, get_current_user, oauth2_scheme
 
+# ─── Configura logger ─────────────────────────────────────────────────────
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
+
+# ─── Crea l’app FastAPI ───────────────────────────────────────────────────
 app = FastAPI(title="NearYou User Dashboard")
 
-# Monta la cartella frontend_user su /static_user
+# ─── Endpoint di debug per le env vars ────────────────────────────────────
+@app.get("/__debug/env")
+async def debug_env():
+    return {
+        "JWT_SECRET": os.getenv("JWT_SECRET"),
+        "JWT_ALGORITHM": os.getenv("JWT_ALGORITHM"),
+        "CLICKHOUSE_PASSWORD": os.getenv("CLICKHOUSE_PASSWORD"),
+    }
+
+# ─── Monta la UI statica ───────────────────────────────────────────────────
 static_dir = os.path.join(os.path.dirname(__file__), "frontend_user")
 app.mount("/static_user",
           StaticFiles(directory=static_dir),
           name="static_user")
 
-# Client ClickHouse per posizioni
+# ─── Client ClickHouse ────────────────────────────────────────────────────
 ch = Client(
     host=os.getenv("CLICKHOUSE_HOST", "clickhouse-server"),
     port=int(os.getenv("CLICKHOUSE_PORT", "9000")),
@@ -28,6 +40,7 @@ ch = Client(
     database=os.getenv("CLICKHOUSE_DATABASE", "nearyou"),
 )
 
+# ─── Login e generazione token ────────────────────────────────────────────
 @app.post("/api/token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
@@ -36,13 +49,13 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     token = create_access_token({"user_id": user["user_id"]})
     return {"access_token": token, "token_type": "bearer"}
 
-# Ora libero l'accesso a login+HTML
+# ─── Servi la pagina di login + mappa ────────────────────────────────────
 @app.get("/dashboard/user", response_class=HTMLResponse)
 async def user_dashboard():
     html_path = os.path.join(static_dir, "index_user.html")
     return HTMLResponse(open(html_path, encoding="utf8").read())
 
-# Questa rimane protetta
+# ─── API protetta: restituisce posizione utente ───────────────────────────
 @app.get("/api/user/positions")
 async def user_positions(current: dict = Depends(get_current_user)):
     uid = current["user_id"]
