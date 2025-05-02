@@ -1,6 +1,8 @@
+# services/dashboard/main_user.py
+
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime  # timedelta no longer needed for since=0
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -27,9 +29,11 @@ async def debug_env():
 
 # ─── Monta la UI statica ───────────────────────────────────────────────────
 static_dir = os.path.join(os.path.dirname(__file__), "frontend_user")
-app.mount("/static_user",
-          StaticFiles(directory=static_dir),
-          name="static_user")
+app.mount(
+    "/static_user",
+    StaticFiles(directory=static_dir),
+    name="static_user",
+)
 
 # ─── Client ClickHouse ────────────────────────────────────────────────────
 ch = Client(
@@ -59,7 +63,8 @@ async def user_dashboard():
 @app.get("/api/user/positions")
 async def user_positions(current: dict = Depends(get_current_user)):
     uid = current["user_id"]
-    since = int((datetime.utcnow() - timedelta(minutes=10)).timestamp())
+    # Rimuoviamo il filtro sugli ultimi 10 minuti per mostrare tutti gli eventi
+    since = 0
     query = f"""
         SELECT
           user_id,
@@ -76,6 +81,13 @@ async def user_positions(current: dict = Depends(get_current_user)):
     if not rows:
         return {"positions": []}
     r = rows[0]
-    return {"positions": [
-        {"user_id": r[0], "latitude": r[1], "longitude": r[2], "message": r[3] or None}
-    ]}
+    return {
+        "positions": [
+            {
+                "user_id": r[0],
+                "latitude": r[1],
+                "longitude": r[2],
+                "message": r[3] or None
+            }
+        ]
+    }
