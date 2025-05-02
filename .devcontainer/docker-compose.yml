@@ -359,6 +359,8 @@ services:
     command: >
       uvicorn services.dashboard.main_user:app
       --host 0.0.0.0 --port 8003
+    env_file:
+      - .env                  
     volumes:
       - ..:/workspace:cached
     ports:
@@ -366,7 +368,6 @@ services:
     depends_on:
       - clickhouse
     restart: unless-stopped
-
 
 
 
