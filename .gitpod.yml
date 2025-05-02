@@ -12,8 +12,7 @@ tasks:
 
 ports:
   - port: 8003
-    onOpen: open-preview     
-    openUrl: /dashboard/user  
+    onOpen: open-preview       
   - port: 9093
     onOpen: open-preview
   - port: 8080
