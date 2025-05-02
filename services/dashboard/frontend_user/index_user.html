@@ -1,30 +1,39 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>NearYou – User Dashboard</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
   <style>
-    body, html {
+    html, body {
       height: 100%;
       margin: 0;
+      padding: 0;
       font-family: Arial, sans-serif;
-      background: #f5f7fa;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
-    .card {
+    #map {
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      display: none;
+      z-index: 0;
+    }
+    #login-card {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 320px;
       background: #fff;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       padding: 24px;
-      width: 320px;
       text-align: center;
       z-index: 1001;
     }
-    .hidden { display: none; }
-    input, button {
+    #login-card input,
+    #login-card button {
       width: 100%;
       margin: 8px 0;
       padding: 12px;
@@ -32,29 +41,25 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    button {
-      background-color: #007bff;
+    #login-card button {
+      background: #007bff;
       color: #fff;
       border: none;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #0056b3;
+    #login-card button:hover {
+      background: #0056b3;
     }
-    #map {
-      position: absolute;
-      top: 0; bottom: 0; left: 0; right: 0;
-      display: none;
+    #err {
+      color: red;
+      margin-top: 8px;
     }
-    /* header flessibile in alto */
     #header {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       height: 48px;
       background: rgba(255,255,255,0.9);
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: space-between;
       padding: 0 16px;
@@ -67,14 +72,12 @@
       color: #333;
     }
     #logoutButton {
-      width: auto;
       padding: 8px 16px;
       background: #dc3545;
+      color: #fff;
       border: none;
       border-radius: 4px;
-      font-size: 14px;
       cursor: pointer;
-      color: #fff;
     }
     #logoutButton:hover {
       background: #b02a37;
@@ -83,102 +86,102 @@
 </head>
 <body>
 
-  <div id="login-card" class="card">
-    <h2>Accedi a NearYou</h2>
-    <input id="user"    placeholder="Username" autocomplete="username"/>
-    <input id="pass"    type="password" placeholder="Password" autocomplete="current-password"/>
-    <button id="btn">Accedi</button>
-    <div id="err" style="color:red; margin-top:8px;"></div>
-  </div>
+  <div id="map"></div>
 
-  <!-- Header con welcome e logout -->
-  <div id="header" class="hidden">
+  <div id="header">
     <div id="welcomeText"></div>
     <button id="logoutButton">Esci</button>
   </div>
 
-  <div id="map"></div>
+  <div id="login-card">
+    <h2>Accedi a NearYou</h2>
+    <input id="user" placeholder="Username" autocomplete="username" />
+    <input
+      id="pass"
+      type="password"
+      placeholder="Password"
+      autocomplete="current-password"
+    />
+    <button id="btn">Accedi</button>
+    <div id="err"></div>
+  </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    // variabili globali
-    let token = "", username = "";
+    let token = "",
+      username = "";
     let map, marker, popup, bikeIcon, polyline;
-    let latlngs = [];
+    const latlngs = [];
 
-    // login
-    document.getElementById('btn').onclick = async () => {
-      username = document.getElementById('user').value.trim();
-      const pwd = document.getElementById('pass').value;
-      document.getElementById('err').textContent = "";
+    document.getElementById("btn").onclick = async () => {
+      username = document.getElementById("user").value.trim();
+      const pwd = document.getElementById("pass").value;
+      document.getElementById("err").textContent = "";
 
       if (!username || !pwd) {
-        document.getElementById('err').textContent = "Inserisci username e password.";
+        document.getElementById("err").textContent = "Compila entrambi i campi.";
         return;
       }
 
       try {
-        const res = await fetch('/api/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ username, password: pwd })
+        const res = await fetch("/api/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ username, password: pwd }),
         });
         const j = await res.json();
-        if (!res.ok) throw new Error(j.detail || 'Errore login');
+        if (!res.ok) throw new Error(j.detail || "Errore login");
         token = j.access_token;
 
         // mostra mappa e header
-        document.getElementById('login-card').classList.add('hidden');
-        document.getElementById('map').style.display = 'block';
-        document.getElementById('header').classList.remove('hidden');
-        document.getElementById('welcomeText').textContent = `Benvenuto, ${username}!`;
+        document.getElementById("login-card").style.display = "none";
+        document.getElementById("map").style.display = "block";
+        document.getElementById("header").style.display = "flex";
+        document.getElementById(
+          "welcomeText"
+        ).textContent = `Benvenuto, ${username}!`;
 
         initMap();
       } catch (e) {
-        document.getElementById('err').textContent = e.message;
+        document.getElementById("err").textContent = e.message;
       }
     };
 
-    // logout
-    document.getElementById('logoutButton').onclick = () => {
+    document.getElementById("logoutButton").onclick = () => {
       token = "";
-      document.getElementById('pass').value = "";
-      document.getElementById('login-card').classList.remove('hidden');
-      document.getElementById('map').style.display = 'none';
-      document.getElementById('header').classList.add('hidden');
-
-      // reset del percorso
-      latlngs = [];
-      if (polyline) polyline.remove();
-      if (marker) marker.remove();
+      document.getElementById("pass").value = "";
+      document.getElementById("login-card").style.display = "block";
+      document.getElementById("map").style.display = "none";
+      document.getElementById("header").style.display = "none";
+      // pulisci
+      if (polyline) map.removeLayer(polyline);
+      if (marker) map.removeLayer(marker);
+      latlngs.length = 0;
     };
 
     function initMap() {
-      // inizializzazione mappa senza controllo zoom di default
-      map = L.map('map', { zoomControl: false }).setView([45.4642, 9.19], 14);
-
-      // layer OpenStreetMap
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+      map = L.map("map", { zoomControl: false }).setView(
+        [45.4642, 9.19],
+        14
+      );
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors",
       }).addTo(map);
+      L.control.zoom({ position: "bottomleft" }).addTo(map);
 
-      // contorni zoom in basso a sinistra
-      L.control.zoom({ position: 'bottomleft' }).addTo(map);
+      // forza il ricalcolo dimensioni
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 200);
 
-      // icona e popup
       bikeIcon = L.icon({
-        iconUrl: 'https://maps.google.com/mapfiles/kml/shapes/cycling.png',
+        iconUrl:
+          "https://maps.google.com/mapfiles/kml/shapes/cycling.png",
         iconSize: [32, 32],
-        iconAnchor: [16, 32]
+        iconAnchor: [16, 32],
       });
       popup = L.popup();
 
-      // resettare eventuali tracciati precedenti
-      latlngs = [];
-      polyline = null;
-      marker = null;
-
-      // primo fetch e poi ripeti
       fetchPosition();
       setInterval(fetchPosition, 2000);
     }
@@ -186,16 +189,16 @@
     async function fetchPosition() {
       if (!token) return;
       try {
-        const res = await fetch('/api/user/positions', {
-          headers: { Authorization: `Bearer ${token}` }
+        const res = await fetch("/api/user/positions", {
+          headers: { Authorization: `Bearer ${token}` },
         });
         const { positions } = await res.json();
+        console.log("Positions:", positions);
         if (!positions.length) return;
 
-        const u = positions[0];
-        const latlng = [u.latitude, u.longitude];
+        const { latitude, longitude, message } = positions[0];
+        const latlng = [latitude, longitude];
 
-        // marker
         if (!marker) {
           marker = L.marker(latlng, { icon: bikeIcon }).addTo(map);
           map.setView(latlng, 15);
@@ -203,7 +206,6 @@
           marker.setLatLng(latlng);
         }
 
-        // percorso (polyline)
         latlngs.push(latlng);
         if (!polyline) {
           polyline = L.polyline(latlngs).addTo(map);
@@ -211,15 +213,14 @@
           polyline.setLatLngs(latlngs);
         }
 
-        // popup promo
-        if (u.message) {
+        if (message) {
           popup
             .setLatLng(latlng)
-            .setContent(`<strong>Promo:</strong> ${u.message}`)
+            .setContent(`<strong>Promo:</strong> ${message}`)
             .openOn(map);
         }
       } catch (err) {
-        console.error('Errore fetchPosition:', err);
+        console.error("fetchPosition error:", err);
       }
     }
   </script>
