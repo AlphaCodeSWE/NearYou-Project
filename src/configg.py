@@ -34,7 +34,7 @@ MESSAGE_GENERATOR_URL = os.getenv(
 )
 
 # JWT
-JWT_SECRET       = os.getenv("JWT_SECRET", "change_this_secret")
+JWT_SECRET       = os.getenv("JWT_SECRET", "9f8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a")
 JWT_ALGORITHM    = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRATION_S = int(os.getenv("JWT_EXPIRATION_S", "3600"))
 
