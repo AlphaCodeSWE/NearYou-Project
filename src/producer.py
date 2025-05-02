@@ -12,7 +12,6 @@ from datetime import datetime, timezone
 
 from kafka import KafkaProducer
 import httpx
-from faker import Faker
 from clickhouse_driver import Client as CHClient
 
 from logger_config import setup_logging
@@ -29,26 +28,28 @@ from utils import wait_for_broker
 setup_logging()
 logger = logging.getLogger(__name__)
 
-def wait_for_osrm(url: str, timeout: int = 2, max_retries: int = 30) -> None:
+def wait_for_osrm(url: str, interval: int = 30, max_retries: int = 500) -> None:
     """
     Attende che OSRM risponda almeno a una richiesta di healthcheck.
     Prova a richiedere un routing banale; considera OSRM pronto se non riceve un 5xx.
+    Ripete ogni `interval` secondi fino a `max_retries` tentativi.
     """
     for attempt in range(1, max_retries + 1):
         try:
             r = httpx.get(
                 f"{url}/route/v1/bicycle/0,0;0,0",
                 params={"overview": "false"},
-                timeout=timeout
+                timeout=10
             )
             if r.status_code < 500:
-                logger.info("OSRM pronto (tentativo %d).", attempt)
+                logger.info("OSRM pronto (tentativo %d/%d).", attempt, max_retries)
                 return
             else:
-                logger.debug("OSRM risposta %d (tentativo %d), riprovo...", r.status_code, attempt)
+                logger.debug("OSRM risposta %d (tentativo %d/%d), riprovo tra %d s…",
+                             r.status_code, attempt, max_retries, interval)
         except Exception as e:
-            logger.debug("OSRM non raggiungibile (tentativo %d): %s", attempt, e)
-        time.sleep(timeout)
+            logger.debug("OSRM non raggiungibile (tentativo %d/%d): %s", attempt, max_retries, e)
+        time.sleep(interval)
     raise RuntimeError(f"OSRM non pronto dopo {max_retries} tentativi.")
 
 def fetch_route_osrm(start: str, end: str) -> list[dict]:
@@ -71,9 +72,9 @@ def random_point_in_bbox() -> tuple[float, float]:
 logger.info("In attesa che Kafka sia disponibile…")
 wait_for_broker("kafka", 9093)
 
-# 2) Attendi che OSRM sia disponibile
+# 2) Attendi che OSRM sia disponibile (ogni 30s, fino a 500 volte)
 logger.info("In attesa che OSRM sia disponibile…")
-wait_for_osrm(OSRM_URL)
+wait_for_osrm(OSRM_URL, interval=30, max_retries=500)
 
 # 3) Imposta il producer Kafka
 producer = KafkaProducer(
@@ -124,14 +125,14 @@ while True:
 
     # Costruisci il payload del messaggio
     message = {
-        "user_id":   uid,
-        "latitude":  pt["lat"],
-        "longitude": pt["lon"],
-        "timestamp": pt["time"] or datetime.now(timezone.utc),
-        "age":        age,
-        "profession": profession,
-        "interests":  interests,
-        "shop_name":  "",
+        "user_id":      uid,
+        "latitude":     pt["lat"],
+        "longitude":    pt["lon"],
+        "timestamp":    pt["time"] or datetime.now(timezone.utc),
+        "age":          age,
+        "profession":   profession,
+        "interests":    interests,
+        "shop_name":    "",
         "shop_category": ""
     }
 
