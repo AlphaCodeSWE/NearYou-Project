@@ -21,6 +21,7 @@
       padding: 24px;
       width: 320px;
       text-align: center;
+      z-index: 1001;
     }
     .hidden { display: none; }
     input, button {
@@ -45,33 +46,35 @@
       top: 0; bottom: 0; left: 0; right: 0;
       display: none;
     }
-    /* banner di benvenuto in alto a sinistra */
-    #welcomeBanner {
+    /* header flessibile in alto */
+    #header {
       position: absolute;
-      top: 16px;
-      left: 16px;
-      background: rgba(255,255,255,0.85);
-      padding: 8px 12px;
-      border-radius: 4px;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      background: rgba(255,255,255,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 1000;
+    }
+    #welcomeText {
       font-size: 18px;
       font-weight: bold;
-      z-index: 1000;
-      display: none;
+      color: #333;
     }
-    /* tasto Esci in alto a destra */
     #logoutButton {
-      position: absolute;
-      top: 16px;
-      right: 16px;
+      width: auto;
+      padding: 8px 16px;
       background: #dc3545;
-      color: #fff;
       border: none;
-      padding: 8px 12px;
       border-radius: 4px;
       font-size: 14px;
       cursor: pointer;
-      z-index: 1000;
-      display: none;
+      color: #fff;
     }
     #logoutButton:hover {
       background: #b02a37;
@@ -88,8 +91,12 @@
     <div id="err" style="color:red; margin-top:8px;"></div>
   </div>
 
-  <div id="welcomeBanner"></div>
-  <button id="logoutButton">Esci</button>
+  <!-- Header con welcome e logout -->
+  <div id="header" class="hidden">
+    <div id="welcomeText"></div>
+    <button id="logoutButton">Esci</button>
+  </div>
+
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -117,16 +124,13 @@
         if (!res.ok) throw new Error(j.detail || 'Errore login');
         token = j.access_token;
 
-        // Nascondi form e mostra mappa + banner + logout
+        // Nascondi form e mostra mappa + header
         document.getElementById('login-card').classList.add('hidden');
         document.getElementById('map').style.display = 'block';
+        document.getElementById('header').classList.remove('hidden');
 
-        const banner = document.getElementById('welcomeBanner');
-        banner.textContent = `Benvenuto, ${username}!`;
-        banner.style.display = 'block';
-
-        const logoutBtn = document.getElementById('logoutButton');
-        logoutBtn.style.display = 'block';
+        // Imposta il testo di benvenuto
+        document.getElementById('welcomeText').textContent = `Benvenuto, ${username}!`;
 
         initMap();
       } catch(e) {
@@ -139,8 +143,7 @@
       document.getElementById('pass').value = "";
       document.getElementById('login-card').classList.remove('hidden');
       document.getElementById('map').style.display = 'none';
-      document.getElementById('welcomeBanner').style.display = 'none';
-      document.getElementById('logoutButton').style.display = 'none';
+      document.getElementById('header').classList.add('hidden');
     };
 
     let map, marker, popup, bikeIcon;
