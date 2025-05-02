@@ -1,9 +1,8 @@
-# src/producer.py
 #!/usr/bin/env python3
 """
 Invia in streaming su Kafka un punto GPS preso da un percorso “vero” in bici
 su Milano, arricchito con un profilo utente prelevato dalla tabella users
-in ClickHouse. Un messaggio al minuto.
+in ClickHouse. Un messaggio ogni 2 secondi.
 """
 import json
 import random
@@ -30,6 +29,28 @@ from utils import wait_for_broker
 setup_logging()
 logger = logging.getLogger(__name__)
 
+def wait_for_osrm(url: str, timeout: int = 2, max_retries: int = 30) -> None:
+    """
+    Attende che OSRM risponda almeno a una richiesta di healthcheck.
+    Prova a richiedere un routing banale; considera OSRM pronto se non riceve un 5xx.
+    """
+    for attempt in range(1, max_retries + 1):
+        try:
+            r = httpx.get(
+                f"{url}/route/v1/bicycle/0,0;0,0",
+                params={"overview": "false"},
+                timeout=timeout
+            )
+            if r.status_code < 500:
+                logger.info("OSRM pronto (tentativo %d).", attempt)
+                return
+            else:
+                logger.debug("OSRM risposta %d (tentativo %d), riprovo...", r.status_code, attempt)
+        except Exception as e:
+            logger.debug("OSRM non raggiungibile (tentativo %d): %s", attempt, e)
+        time.sleep(timeout)
+    raise RuntimeError(f"OSRM non pronto dopo {max_retries} tentativi.")
+
 def fetch_route_osrm(start: str, end: str) -> list[dict]:
     url = f"{OSRM_URL}/route/v1/bicycle/{start};{end}"
     resp = httpx.get(
@@ -46,11 +67,15 @@ def random_point_in_bbox() -> tuple[float, float]:
     lon = random.uniform(MILANO_MIN_LON, MILANO_MAX_LON)
     return lon, lat
 
-# Attendi Kafka
+# 1) Attendi che Kafka sia disponibile
 logger.info("In attesa che Kafka sia disponibile…")
 wait_for_broker("kafka", 9093)
 
-# Kafka producer
+# 2) Attendi che OSRM sia disponibile
+logger.info("In attesa che OSRM sia disponibile…")
+wait_for_osrm(OSRM_URL)
+
+# 3) Imposta il producer Kafka
 producer = KafkaProducer(
     bootstrap_servers=[KAFKA_BROKER],
     security_protocol="SSL",
@@ -62,7 +87,7 @@ producer = KafkaProducer(
 )
 logger.info("Producer pronto sul topic %s", KAFKA_TOPIC)
 
-# ClickHouse client per leggere i profili
+# 4) Carica i profili utenti da ClickHouse
 ch = CHClient(
     host=CLICKHOUSE_HOST,
     port=CLICKHOUSE_PORT,
@@ -70,25 +95,23 @@ ch = CHClient(
     password=CLICKHOUSE_PASSWORD,
     database=CLICKHOUSE_DATABASE
 )
-# Carica in memoria tutti i profili esistenti
 users = ch.execute("SELECT user_id, age, profession, interests FROM users")
 if not users:
     logger.error("Nessun utente trovato in ClickHouse: esegui generate_users prima.")
     exit(1)
 
-# Primo percorso casuale
+# 5) Estrai il primo percorso casuale da OSRM
 lon1, lat1 = random_point_in_bbox()
 lon2, lat2 = random_point_in_bbox()
 current_route = fetch_route_osrm(f"{lon1},{lat1}", f"{lon2},{lat2}")
 idx = 0
 
-# Loop di invio: un messaggio al minuto
+# 6) Ciclo di invio: un messaggio ogni 2 secondi
 while True:
-    # Punto successivo
     pt = current_route[idx]
     idx += 1
 
-    # Se finito, nuovo percorso
+    # Se ho finito il percorso, ne prendo uno nuovo
     if idx >= len(current_route):
         lon1, lat1 = random_point_in_bbox()
         lon2, lat2 = random_point_in_bbox()
@@ -96,26 +119,26 @@ while True:
         idx = 0
         pt = current_route[0]
 
-    # Scegli un profilo esistente a caso
+    # Scegli un profilo utente casuale
     uid, age, profession, interests = random.choice(users)
 
-    # Costruisci il messaggio
+    # Costruisci il payload del messaggio
     message = {
-        "user_id": uid,
-        "latitude": pt["lat"],
+        "user_id":   uid,
+        "latitude":  pt["lat"],
         "longitude": pt["lon"],
         "timestamp": pt["time"] or datetime.now(timezone.utc),
-        "age": age,
+        "age":        age,
         "profession": profession,
-        "interests": interests,
-        "shop_name": "",
+        "interests":  interests,
+        "shop_name":  "",
         "shop_category": ""
     }
 
-    # Invia e flush
+    # Invia su Kafka
     producer.send(KAFKA_TOPIC, message)
     producer.flush()
     logger.info("Inviato (%s): %s", uid, message)
 
-    
+    # Aspetta 2 secondi prima del prossimo punto
     time.sleep(2)
