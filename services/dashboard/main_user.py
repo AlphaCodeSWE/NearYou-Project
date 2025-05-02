@@ -1,7 +1,10 @@
+# services/dashboard/main_user.py
+
 import os
 from datetime import datetime, timedelta
 
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.staticfiles import StaticFiles         # <- corretto
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from clickhouse_driver import Client
@@ -10,10 +13,10 @@ from .auth import authenticate_user, create_access_token, get_current_user, oaut
 
 app = FastAPI(title="NearYou User Dashboard")
 
-# Serve la UI statica per l’utente
+# Monta la cartella frontend_user su /static_user
 static_dir = os.path.join(os.path.dirname(__file__), "frontend_user")
 app.mount("/static_user",
-          __import__("fastapi").staticfiles.StaticFiles(directory=static_dir),
+          StaticFiles(directory=static_dir),
           name="static_user")
 
 # Client ClickHouse per posizioni
