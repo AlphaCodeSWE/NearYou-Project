@@ -2,7 +2,7 @@
 """
 Invia in streaming su Kafka un punto GPS preso da un percorso “vero” in bici
 su Milano, arricchito con un profilo utente prelevato dalla tabella users
-in ClickHouse. Un messaggio ogni 2 secondi.
+in ClickHouse.
 """
 import json
 import random
@@ -141,5 +141,5 @@ while True:
     producer.flush()
     logger.info("Inviato (%s): %s", uid, message)
 
-    # Aspetta 2 secondi prima del prossimo punto
-    time.sleep(2)
+    # Aspetta 2 secondi prima del prossimo punto (non faccio più aspettare)
+    #time.sleep(2)
