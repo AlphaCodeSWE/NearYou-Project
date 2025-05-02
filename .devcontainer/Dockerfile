@@ -1,4 +1,5 @@
 # .devcontainer/Dockerfile
+
 FROM python:3.10-slim
 
 # Aggiorna gli indici dei pacchetti e installa il client Docker
@@ -18,5 +19,8 @@ COPY .devcontainer/scripts /workspace/.devcontainer/scripts
 # Imposta i permessi di esecuzione per tutti gli script .sh in /.devcontainer/scripts
 RUN chmod +x /workspace/.devcontainer/scripts/*.sh
 
-# Mantieni il container in esecuzione (come default)
+# Espone src/ e workspace nel PYTHONPATH così da importare i moduli (es. configg)
+ENV PYTHONPATH=/workspace/src:/workspace
+
+# Mantieni il container in esecuzione (default)
 CMD ["sleep", "infinity"]
