@@ -117,5 +117,5 @@ while True:
     producer.flush()
     logger.info("Inviato (%s): %s", uid, message)
 
-    # Attendi 60 secondi
-    time.sleep(60)
+    
+    time.sleep(2)
