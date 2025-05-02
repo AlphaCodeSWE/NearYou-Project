@@ -101,20 +101,18 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    let token = "";
-    let username = "";
-
-    // per tracciare il percorso
+    // variabili globali
+    let token = "", username = "";
+    let map, marker, popup, bikeIcon, polyline;
     let latlngs = [];
-    let polyline = null;
-    let marker = null, popup = null, bikeIcon = null;
 
+    // login
     document.getElementById('btn').onclick = async () => {
       username = document.getElementById('user').value.trim();
-      const p = document.getElementById('pass').value;
+      const pwd = document.getElementById('pass').value;
       document.getElementById('err').textContent = "";
 
-      if (!username || !p) {
+      if (!username || !pwd) {
         document.getElementById('err').textContent = "Inserisci username e password.";
         return;
       }
@@ -123,26 +121,25 @@
         const res = await fetch('/api/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ username, password: p })
+          body: new URLSearchParams({ username, password: pwd })
         });
         const j = await res.json();
         if (!res.ok) throw new Error(j.detail || 'Errore login');
         token = j.access_token;
 
-        // Nascondi form e mostra mappa + header
+        // mostra mappa e header
         document.getElementById('login-card').classList.add('hidden');
         document.getElementById('map').style.display = 'block';
         document.getElementById('header').classList.remove('hidden');
-
-        // Imposta il testo di benvenuto
         document.getElementById('welcomeText').textContent = `Benvenuto, ${username}!`;
 
         initMap();
-      } catch(e) {
+      } catch (e) {
         document.getElementById('err').textContent = e.message;
       }
     };
 
+    // logout
     document.getElementById('logoutButton').onclick = () => {
       token = "";
       document.getElementById('pass').value = "";
@@ -150,73 +147,79 @@
       document.getElementById('map').style.display = 'none';
       document.getElementById('header').classList.add('hidden');
 
-      // reset percorso
+      // reset del percorso
       latlngs = [];
-      if (polyline) {
-        map.removeLayer(polyline);
-        polyline = null;
-      }
-      if (marker) {
-        map.removeLayer(marker);
-        marker = null;
-      }
+      if (polyline) polyline.remove();
+      if (marker) marker.remove();
     };
 
     function initMap() {
-      // inizializza mappa senza zoomControl
-      map = L.map('map', { zoomControl: false }).setView([45.4642,9.19], 14);
+      // inizializzazione mappa senza controllo zoom di default
+      map = L.map('map', { zoomControl: false }).setView([45.4642, 9.19], 14);
 
-      // tile layer
+      // layer OpenStreetMap
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
 
-      // pulsanti zoom in basso a sinistra
+      // contorni zoom in basso a sinistra
       L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
+      // icona e popup
       bikeIcon = L.icon({
         iconUrl: 'https://maps.google.com/mapfiles/kml/shapes/cycling.png',
-        iconSize: [32,32], iconAnchor: [16,32]
+        iconSize: [32, 32],
+        iconAnchor: [16, 32]
       });
       popup = L.popup();
 
-      // prima chiamata e poi ripeti ogni 2s
+      // resettare eventuali tracciati precedenti
+      latlngs = [];
+      polyline = null;
+      marker = null;
+
+      // primo fetch e poi ripeti
       fetchPosition();
       setInterval(fetchPosition, 2000);
     }
 
     async function fetchPosition() {
       if (!token) return;
-      const res = await fetch('/api/user/positions', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const { positions } = await res.json();
-      if (!positions.length) return;
+      try {
+        const res = await fetch('/api/user/positions', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const { positions } = await res.json();
+        if (!positions.length) return;
 
-      const u = positions[0];
-      const latlng = [u.latitude, u.longitude];
+        const u = positions[0];
+        const latlng = [u.latitude, u.longitude];
 
-      // aggiorna marker
-      if (!marker) {
-        marker = L.marker(latlng, { icon: bikeIcon }).addTo(map);
-        map.setView(latlng, 15);
-      } else {
-        marker.setLatLng(latlng);
-      }
+        // marker
+        if (!marker) {
+          marker = L.marker(latlng, { icon: bikeIcon }).addTo(map);
+          map.setView(latlng, 15);
+        } else {
+          marker.setLatLng(latlng);
+        }
 
-      // estendi la lista e (ri)disegna la polyline
-      latlngs.push(latlng);
-      if (polyline) {
-        map.removeLayer(polyline);
-      }
-      polyline = L.polyline(latlngs).addTo(map);
+        // percorso (polyline)
+        latlngs.push(latlng);
+        if (!polyline) {
+          polyline = L.polyline(latlngs).addTo(map);
+        } else {
+          polyline.setLatLngs(latlngs);
+        }
 
-      // popup per promo
-      if (u.message) {
-        popup
-          .setLatLng(latlng)
-          .setContent(`<strong>Promo:</strong> ${u.message}`)
-          .openOn(map);
+        // popup promo
+        if (u.message) {
+          popup
+            .setLatLng(latlng)
+            .setContent(`<strong>Promo:</strong> ${u.message}`)
+            .openOn(map);
+        }
+      } catch (err) {
+        console.error('Errore fetchPosition:', err);
       }
     }
   </script>
