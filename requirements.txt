@@ -24,3 +24,4 @@ haversine
 
 python-jose[cryptography]      # per JWT
 passlib[bcrypt]               # per hashing password 
+python-multipart
