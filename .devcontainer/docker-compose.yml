@@ -352,7 +352,6 @@ services:
     command: ["celery","worker"]
     restart: unless-stopped
 
-  services:
   dashboard-user:
     build:
       context: ..
