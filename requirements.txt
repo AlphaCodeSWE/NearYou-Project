@@ -21,3 +21,6 @@ gpxpy
 
 # per calcolo distanza haversine nel consumer
 haversine
+
+python-jose[cryptography]      # per JWT
+passlib[bcrypt]               # per hashing password 

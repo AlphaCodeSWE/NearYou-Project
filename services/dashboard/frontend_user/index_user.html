@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>NearYou – User Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    html,body { height:100%; margin:0; padding:0; }
+    #login { display:flex; flex-direction:column; width:300px; margin:100px auto; }
+    #map { display:none; height:100%; }
+    input, button { margin:4px 0; padding:8px; font-size:16px; }
+  </style>
+</head>
+<body>
+  <div id="login">
+    <h2>Login</h2>
+    <input id="user"    placeholder="Username"/>
+    <input id="pass"    type="password" placeholder="Password"/>
+    <button id="btn">Accedi</button>
+    <div id="err" style="color:red"></div>
+  </div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let token = "";
+    document.getElementById('btn').onclick = async () => {
+      const u = document.getElementById('user').value;
+      const p = document.getElementById('pass').value;
+      try {
+        const res = await fetch('/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ username: u, password: p })
+        });
+        const j = await res.json();
+        if (!res.ok) throw new Error(j.detail || 'Errore login');
+        token = j.access_token;
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('map').style.display   = 'block';
+        initMap();
+      } catch(e) {
+        document.getElementById('err').textContent = e.message;
+      }
+    };
+
+    let map, marker, popup, bikeIcon;
+    function initMap() {
+      map = L.map('map').setView([45.4642,9.19],14);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        attribution:'© OpenStreetMap contributors'
+      }).addTo(map);
+      bikeIcon = L.icon({
+        iconUrl:'https://maps.google.com/mapfiles/kml/shapes/cycling.png',
+        iconSize:[32,32], iconAnchor:[16,32]
+      });
+      popup = L.popup();
+      fetchPosition();
+      setInterval(fetchPosition, 2000);
+    }
+
+    async function fetchPosition(){
+      const res = await fetch('/api/user/positions', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const { positions } = await res.json();
+      if (positions.length === 0) return;
+      const u = positions[0];
+      if (!marker) {
+        marker = L.marker([u.latitude, u.longitude], { icon: bikeIcon }).addTo(map);
+        map.setView([u.latitude, u.longitude], 15);
+      } else {
+        marker.setLatLng([u.latitude, u.longitude]);
+      }
+      if (u.message) {
+        popup.setLatLng([u.latitude, u.longitude])
+             .setContent(`<strong>Promo:</strong> ${u.message}`)
+             .openOn(map);
+      }
+    }
+  </script>
+</body>
+</html>

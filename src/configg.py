@@ -1,8 +1,7 @@
-# src/configg.py
 import os
 from dotenv import load_dotenv
 
-load_dotenv()  # Carica le variabili dall’ambiente 
+load_dotenv()  # Carica le variabili dall’ambiente
 
 # Configurazione Kafka
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "kafka:9093")
@@ -34,6 +33,11 @@ MESSAGE_GENERATOR_URL = os.getenv(
     "http://message-generator:8001/generate",
 )
 
+# JWT
+JWT_SECRET       = os.getenv("JWT_SECRET", "change_this_secret")
+JWT_ALGORITHM    = os.getenv("JWT_ALGORITHM", "HS256")
+JWT_EXPIRATION_S = int(os.getenv("JWT_EXPIRATION_S", "3600"))
+
 # Google Maps JS API Key
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
 
@@ -43,12 +47,8 @@ FIREBASE_AUTH_DOMAIN        = os.getenv("FIREBASE_AUTH_DOMAIN", "")
 FIREBASE_PROJECT_ID         = os.getenv("FIREBASE_PROJECT_ID", "")
 FIREBASE_RECAPTCHA_SITE_KEY = os.getenv("FIREBASE_RECAPTCHA_SITE_KEY", "")
 
-# ——————————————————————————————————————————————————————————————
 # OSRM self-hosted per routing bici su Milano
-# URL del servizio OSRM (container osrm-milano)
-OSRM_URL = os.getenv("OSRM_URL", "http://osrm-milano:5000")
-
-# Bounding-box di Milano per generazione punti casuali
+OSRM_URL      = os.getenv("OSRM_URL", "http://osrm-milano:5000")
 MILANO_MIN_LAT = float(os.getenv("MILANO_MIN_LAT", "45.40"))
 MILANO_MAX_LAT = float(os.getenv("MILANO_MAX_LAT", "45.50"))
 MILANO_MIN_LON = float(os.getenv("MILANO_MIN_LON", "9.10"))

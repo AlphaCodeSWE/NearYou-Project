@@ -352,18 +352,19 @@ services:
     command: ["celery","worker"]
     restart: unless-stopped
 
-  dashboard:
+  dashboard-user:
     build:
       context: ..
       dockerfile: .devcontainer/Dockerfile
-    command: uvicorn services.dashboard.main:app --host 0.0.0.0 --port 8002
+    command: uvicorn services.dashboard.main_user:app --host 0.0.0.0 --port 8003
     volumes:
       - ..:/workspace:cached
     ports:
-      - "8002:8002"
+      - "8003:8003"
     depends_on:
       - clickhouse
     restart: unless-stopped
+
 
 volumes:
   kafka_data:
