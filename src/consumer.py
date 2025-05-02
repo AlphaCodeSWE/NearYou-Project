@@ -12,7 +12,7 @@ from datetime import datetime
 
 import httpx
 import psycopg2
-from kafka import KafkaConsumer
+from kafka import KafkaConsumer, TopicPartition
 from clickhouse_driver import Client
 from clickhouse_driver.errors import ServerException
 
@@ -45,11 +45,11 @@ wait_for_broker("kafka", 9093)
 logger.info("Attendo Postgres …")
 wait_for_broker(POSTGRES_HOST, POSTGRES_PORT)
 
-# ─── ClickHouse ─────────────────────────────────────────────────────────────
-# 3) Attendo ClickHouse
+# 3) Attendo ClickHouse (porta TCP)
 logger.info("Attendo ClickHouse …")
 wait_for_broker("clickhouse-server", CLICKHOUSE_PORT)
 
+# ─── ClickHouse client & schema readiness ──────────────────────────────────
 ch = Client(
     host=CLICKHOUSE_HOST,
     port=CLICKHOUSE_PORT,
@@ -79,7 +79,7 @@ def wait_for_ch_table(table_name: str, client: Client, interval: int = 2, max_re
 wait_for_ch_table("users",       ch)
 wait_for_ch_table("user_events", ch)
 
-# ─── Kafka consumer ─────────────────────────────────────────────────────────
+# ─── Kafka consumer setup ───────────────────────────────────────────────────
 consumer = KafkaConsumer(
     KAFKA_TOPIC,
     bootstrap_servers=[KAFKA_BROKER],
@@ -92,6 +92,20 @@ consumer = KafkaConsumer(
     group_id=CONSUMER_GROUP,
     value_deserializer=lambda m: json.loads(m.decode("utf-8")),
 )
+
+# 6) Verifica che il producer abbia già inviato almeno un messaggio
+logger.info("Controllo che il producer abbia pubblicato almeno un messaggio…")
+tp = TopicPartition(KAFKA_TOPIC, 0)
+for _ in range(6):
+    begin = consumer.beginning_offsets([tp])[tp]
+    end   = consumer.end_offsets([tp])[tp]
+    if end > begin:
+        logger.info("Trovati %d messaggi sul topic %s → parto.", end - begin, KAFKA_TOPIC)
+        break
+    logger.warning("Nessun messaggio ancora (begin=%d, end=%d), riprovo tra 5s…", begin, end)
+    time.sleep(5)
+else:
+    raise RuntimeError(f"Il producer non sembra aver inviato nulla su {KAFKA_TOPIC} dopo 30s.")
 
 # ─── PostGIS connection ─────────────────────────────────────────────────────
 logger.info("Apro connessione a Postgres …")
