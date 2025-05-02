@@ -360,7 +360,7 @@ services:
     volumes:
       - ..:/workspace:cached
     env_file:
-      - .devcontainer/.env   # <-- qui
+      - .devcontainer/.env   
     ports:
       - "8003:8003"
     depends_on:
