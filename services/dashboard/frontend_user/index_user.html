@@ -104,6 +104,11 @@
     let token = "";
     let username = "";
 
+    // per tracciare il percorso
+    let latlngs = [];
+    let polyline = null;
+    let marker = null, popup = null, bikeIcon = null;
+
     document.getElementById('btn').onclick = async () => {
       username = document.getElementById('user').value.trim();
       const p = document.getElementById('pass').value;
@@ -144,25 +149,30 @@
       document.getElementById('login-card').classList.remove('hidden');
       document.getElementById('map').style.display = 'none';
       document.getElementById('header').classList.add('hidden');
+
+      // reset percorso
+      latlngs = [];
+      if (polyline) {
+        map.removeLayer(polyline);
+        polyline = null;
+      }
+      if (marker) {
+        map.removeLayer(marker);
+        marker = null;
+      }
     };
 
-    let map, marker, popup, bikeIcon;
-
     function initMap() {
-      // Rimuove i controlli di zoom di default
-      map = L.map('map', {
-        zoomControl: false
-      }).setView([45.4642,9.19], 14);
+      // inizializza mappa senza zoomControl
+      map = L.map('map', { zoomControl: false }).setView([45.4642,9.19], 14);
 
-      // Tile layer
+      // tile layer
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
 
-      // Controlli zoom in basso a sinistra
-      L.control.zoom({
-        position: 'bottomleft'
-      }).addTo(map);
+      // pulsanti zoom in basso a sinistra
+      L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
       bikeIcon = L.icon({
         iconUrl: 'https://maps.google.com/mapfiles/kml/shapes/cycling.png',
@@ -170,6 +180,7 @@
       });
       popup = L.popup();
 
+      // prima chiamata e poi ripeti ogni 2s
       fetchPosition();
       setInterval(fetchPosition, 2000);
     }
@@ -181,17 +192,31 @@
       });
       const { positions } = await res.json();
       if (!positions.length) return;
+
       const u = positions[0];
+      const latlng = [u.latitude, u.longitude];
+
+      // aggiorna marker
       if (!marker) {
-        marker = L.marker([u.latitude, u.longitude], { icon: bikeIcon }).addTo(map);
-        map.setView([u.latitude, u.longitude], 15);
+        marker = L.marker(latlng, { icon: bikeIcon }).addTo(map);
+        map.setView(latlng, 15);
       } else {
-        marker.setLatLng([u.latitude, u.longitude]);
+        marker.setLatLng(latlng);
       }
+
+      // estendi la lista e (ri)disegna la polyline
+      latlngs.push(latlng);
+      if (polyline) {
+        map.removeLayer(polyline);
+      }
+      polyline = L.polyline(latlngs).addTo(map);
+
+      // popup per promo
       if (u.message) {
-        popup.setLatLng([u.latitude, u.longitude])
-             .setContent(`<strong>Promo:</strong> ${u.message}`)
-             .openOn(map);
+        popup
+          .setLatLng(latlng)
+          .setContent(`<strong>Promo:</strong> ${u.message}`)
+          .openOn(map);
       }
     }
   </script>
