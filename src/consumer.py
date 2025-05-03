@@ -3,7 +3,7 @@ import os
 import asyncio
 import ssl
 import json
-import logging                # ← aggiunto!
+import logging                
 from datetime import datetime, timezone
 
 import asyncpg
