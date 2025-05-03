@@ -25,29 +25,52 @@ from configg import (
     CLICKHOUSE_DATABASE,
     CLICKHOUSE_PORT,
 )
-from utils import wait_for_broker, wait_for_postgres, wait_for_clickhouse
+from utils import wait_for_broker, wait_for_clickhouse
 from logger_config import setup_logging
 
 logger = logging.getLogger(__name__)
 setup_logging()
 
+async def wait_for_postgres(
+    host: str, port: int, user: str, password: str, database: str,
+    interval: float = 2.0, max_retries: int = 30
+):
+    for i in range(max_retries):
+        try:
+            conn = await asyncpg.connect(
+                host=host, port=port, user=user, password=password, database=database
+            )
+            await conn.close()
+            logger.info("Postgres è pronto")
+            return
+        except Exception:
+            logger.debug("Postgres non pronto (tentativo %d/%d)", i+1, max_retries)
+            await asyncio.sleep(interval)
+    raise RuntimeError("Postgres non pronto dopo troppe prove")
+
+
 async def consumer_loop():
-    # 1) Readiness checks
+    # 1) Readiness
     host, port = KAFKA_BROKER.split(":")
     await wait_for_broker(host, int(port))
     logger.info("Kafka è pronto")
 
-    await wait_for_postgres()
-    logger.info("Postgres è pronto")
+    await wait_for_postgres(
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        database=POSTGRES_DB,
+    )
 
     await wait_for_clickhouse()
     logger.info("ClickHouse è pronto")
 
-    # 2) Prepara SSL context per Kafka
+    # 2) SSL context per Kafka
     ssl_context = ssl.create_default_context(cafile=SSL_CAFILE)
     ssl_context.load_cert_chain(certfile=SSL_CERTFILE, keyfile=SSL_KEYFILE)
 
-    # 3) Istanzia il consumer Kafka
+    # 3) Kafka consumer
     consumer = AIOKafkaConsumer(
         KAFKA_TOPIC,
         bootstrap_servers=[KAFKA_BROKER],
@@ -59,7 +82,7 @@ async def consumer_loop():
     )
     await consumer.start()
 
-    # 4) Connetti ai database
+    # 4) Connessioni a DB
     pg_pool = await asyncpg.create_pool(
         host=POSTGRES_HOST,
         port=POSTGRES_PORT,
@@ -76,12 +99,12 @@ async def consumer_loop():
     )
 
     try:
-        # 5) Consuma i messaggi in streaming
+        # 5) Loop di consumo
         async for msg in consumer:
             data = msg.value
             logger.debug("Ricevuto: %s", data)
 
-            # --- Inserimento su Postgres ---
+            # Inserimento in Postgres
             await pg_pool.execute(
                 """
                 INSERT INTO gps_events
@@ -97,7 +120,7 @@ async def consumer_loop():
                 data["interests"],
             )
 
-            # --- Inserimento su ClickHouse ---
+            # Inserimento in ClickHouse
             ch_client.execute(
                 """
                 INSERT INTO gps_events
@@ -116,9 +139,9 @@ async def consumer_loop():
             )
 
     finally:
-        # 6) Pulizia
         await consumer.stop()
         await pg_pool.close()
+
 
 if __name__ == "__main__":
     asyncio.run(consumer_loop())
