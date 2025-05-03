@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import asyncio
-import ssl
 import json
 import logging
-from datetime import datetime, timezone
+import ssl
 
 import asyncpg
 from aiokafka import AIOKafkaConsumer
@@ -33,132 +32,163 @@ from utils import wait_for_broker
 logger = logging.getLogger(__name__)
 setup_logging()
 
-async def wait_for_clickhouse(retries: int = 30, interval: int = 2):
-    for i in range(retries):
+
+async def wait_for_clickhouse():
+    for attempt in range(30):
         try:
             client = CHClient(
-                host=CLICKHOUSE_HOST, port=CLICKHOUSE_PORT,
-                user=CLICKHOUSE_USER, password=CLICKHOUSE_PASSWORD,
-                database=CLICKHOUSE_DATABASE
+                host=CLICKHOUSE_HOST,
+                port=CLICKHOUSE_PORT,
+                user=CLICKHOUSE_USER,
+                password=CLICKHOUSE_PASSWORD,
+                database=CLICKHOUSE_DATABASE,
             )
             client.execute("SELECT 1")
             logger.info("ClickHouse è pronto")
             return
         except Exception:
-            logger.debug("ClickHouse non pronto (tentativo %d/%d)", i+1, retries)
-            await asyncio.sleep(interval)
+            logger.debug("ClickHouse non pronto (tentativo %d/30)", attempt + 1)
+            await asyncio.sleep(2)
     raise RuntimeError("ClickHouse non pronto")
 
-async def wait_for_postgres(dsn: str, retries: int = 30, interval: int = 2):
-    for i in range(retries):
+
+async def wait_for_postgres():
+    for attempt in range(30):
         try:
-            conn = await asyncpg.connect(dsn=dsn)
+            conn = await asyncpg.connect(
+                host=POSTGRES_HOST,
+                port=POSTGRES_PORT,
+                user=POSTGRES_USER,
+                password=POSTGRES_PASSWORD,
+                database=POSTGRES_DB,
+            )
             await conn.close()
             logger.info("Postgres è pronto")
             return
         except Exception:
-            logger.debug("Postgres non pronto (tentativo %d/%d)", i+1, retries)
-            await asyncio.sleep(interval)
+            logger.debug("Postgres non pronto (tentativo %d/30)", attempt + 1)
+            await asyncio.sleep(2)
     raise RuntimeError("Postgres non pronto")
 
-def create_ssl_context() -> ssl.SSLContext:
-    ctx = ssl.create_default_context(cafile=SSL_CAFILE)
-    ctx.load_cert_chain(certfile=SSL_CERTFILE, keyfile=SSL_KEYFILE)
-    return ctx
 
 async def consumer_loop():
-    # --- readiness ---
+    # 1) Controlli di readiness
     host, port = KAFKA_BROKER.split(":")
-    # Kafka
-    await asyncio.get_event_loop().run_in_executor(
-        None, wait_for_broker, host, int(port)
+    await asyncio.gather(
+        asyncio.get_event_loop().run_in_executor(None, wait_for_broker, host, int(port)),
+        wait_for_postgres(),
+        wait_for_clickhouse(),
     )
-    logger.info("Kafka è pronto")
-    # ClickHouse
-    await wait_for_clickhouse()
-    # Postgres
-    pg_dsn = (
-        f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}"
-        f"@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
-    )
-    await wait_for_postgres(pg_dsn)
+    logger.info("Kafka, Postgres e ClickHouse sono pronti")
 
-    # --- consumer setup ---
-    ssl_ctx = create_ssl_context()
+    # 2) Crea contesto SSL per Kafka
+    ssl_context = ssl.create_default_context(cafile=SSL_CAFILE)
+    ssl_context.load_cert_chain(SSL_CERTFILE, SSL_KEYFILE)
+
+    # 3) Inizializza consumer Kafka
     consumer = AIOKafkaConsumer(
         KAFKA_TOPIC,
         bootstrap_servers=KAFKA_BROKER,
-        security_protocol="SSL",
-        ssl_context=ssl_ctx,
         group_id=CONSUMER_GROUP,
-        value_deserializer=lambda m: json.loads(m.decode("utf-8"))
+        security_protocol="SSL",
+        ssl_context=ssl_context,
+        auto_offset_reset="latest",
     )
     await consumer.start()
 
-    # --- apri pool Postgres e client ClickHouse ---
-    pg_pool = await asyncpg.create_pool(dsn=pg_dsn, min_size=1, max_size=5)
-    ch = CHClient(
-        host=CLICKHOUSE_HOST, port=CLICKHOUSE_PORT,
-        user=CLICKHOUSE_USER, password=CLICKHOUSE_PASSWORD,
-        database=CLICKHOUSE_DATABASE
+    # 4) Pool Postgres e client ClickHouse
+    pg_pool = await asyncpg.create_pool(
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        database=POSTGRES_DB,
     )
+    ch_client = CHClient(
+        host=CLICKHOUSE_HOST,
+        port=CLICKHOUSE_PORT,
+        user=CLICKHOUSE_USER,
+        password=CLICKHOUSE_PASSWORD,
+        database=CLICKHOUSE_DATABASE,
+    )
+
+    event_id = 0
 
     try:
         async for msg in consumer:
-            data = msg.value
-            user_id   = data["user_id"]
-            lat       = data["latitude"]
-            lon       = data["longitude"]
-            ts        = data["timestamp"]
+            try:
+                # Decodifica il messaggio Kafka
+                data = json.loads(msg.value)
+                user_id = data["user_id"]
+                lat = data["latitude"]
+                lon = data["longitude"]
+                timestamp = data["timestamp"]
 
-            # 1) Trova il negozio più vicino in Postgres
-            row = await pg_pool.fetchrow(
-                """
-                SELECT shop_id, shop_name,
-                  ST_DistanceSphere(geom, ST_MakePoint($1, $2)) AS distance
-                FROM shops
-                ORDER BY geom <-> ST_MakePoint($1, $2)
-                LIMIT 1
-                """,
-                lon, lat
-            )
-            if row:
-                shop_id, shop_name, dist = (
-                    row["shop_id"], row["shop_name"], row["distance"]
+                # 1) Trova il negozio più vicino in Postgres
+                row = await pg_pool.fetchrow(
+                    """
+                    SELECT
+                        shop_id,
+                        shop_name,
+                        ST_DistanceSphere(
+                            geom,
+                            ST_SetSRID(ST_MakePoint($1, $2), 4326)
+                        ) AS poi_range
+                    FROM shops
+                    ORDER BY geom <-> ST_SetSRID(ST_MakePoint($1, $2), 4326)
+                    LIMIT 1
+                    """,
+                    lon, lat,
                 )
-            else:
-                shop_id = None
-                shop_name = ""
-                dist = 0.0
+                if row:
+                    shop_name = row["shop_name"]
+                    poi_range = row["poi_range"]
+                else:
+                    shop_name = ""
+                    poi_range = None
 
-            # 2) Inserisci in ClickHouse user_events
-            event_id = int(datetime.now(timezone.utc).timestamp() * 1e6)
-            ch.execute(
-                """
-                INSERT INTO user_events
-                  (event_id, event_time, user_id,
-                   latitude, longitude,
-                   poi_range, poi_name, poi_info)
-                VALUES
-                """,
-                [{
-                    "event_id":   event_id,
-                    "event_time": ts,
-                    "user_id":    user_id,
-                    "latitude":   lat,
-                    "longitude":  lon,
-                    "poi_range":  dist,
-                    "poi_name":   shop_name,
-                    "poi_info":   shop_name
-                }]
-            )
+                # 2) Inserisci in ClickHouse nella tabella user_events
+                event_id += 1
+                ch_client.execute(
+                    """
+                    INSERT INTO user_events (
+                        event_id,
+                        event_time,
+                        user_id,
+                        latitude,
+                        longitude,
+                        poi_range,
+                        poi_name,
+                        poi_info
+                    ) VALUES
+                    """,
+                    [
+                        (
+                            event_id,
+                            timestamp,
+                            user_id,
+                            lat,
+                            lon,
+                            poi_range,
+                            shop_name,
+                            ""  # qui puoi mettere ulteriori informazioni su poi_info
+                        )
+                    ],
+                )
+                logger.info(
+                    "Evento %d salvato: user=%s shop=%s distanza=%.2f",
+                    event_id, user_id, shop_name, poi_range or 0.0,
+                )
 
-            logger.debug(
-                "Evt %d: user=%d → shop=%s (%.1fm)",
-                event_id, user_id, shop_name, dist
-            )
+            except Exception as exc:
+                logger.error("Errore elaborazione messaggio %s: %s", msg, exc)
     finally:
         await consumer.stop()
 
-if __name__ == "__main__":
+
+def main():
     asyncio.run(consumer_loop())
+
+
+if __name__ == "__main__":
+    main()
