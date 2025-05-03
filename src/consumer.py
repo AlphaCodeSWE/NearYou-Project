@@ -3,6 +3,7 @@ import os
 import asyncio
 import ssl
 import json
+import logging                # ← aggiunto!
 from datetime import datetime, timezone
 
 import asyncpg
@@ -131,7 +132,7 @@ async def consumer_loop():
                          data["longitude"],
                          distance,
                          shop_name,
-                         "")  # poi_info vuoto, puoi personalizzare
+                         "")  # poi_info vuoto
                     ]
                 )
                 logger.info(
