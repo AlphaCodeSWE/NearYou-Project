@@ -1,160 +1,123 @@
 #!/usr/bin/env python3
+import os
 import asyncio
 import json
 import logging
-import ssl
 
 from aiokafka import AIOKafkaConsumer
-import asyncpg
 from clickhouse_driver import Client as CHClient
+import asyncpg
 
-from configg import (
-    KAFKA_BROKER,
-    KAFKA_TOPIC,
-    CONSUMER_GROUP,
-    SSL_CAFILE,
-    SSL_CERTFILE,
-    SSL_KEYFILE,
-    POSTGRES_HOST,
-    POSTGRES_USER,
-    POSTGRES_PASSWORD,
-    POSTGRES_DB,
-    POSTGRES_PORT,
-    CLICKHOUSE_HOST,
-    CLICKHOUSE_USER,
-    CLICKHOUSE_PASSWORD,
-    CLICKHOUSE_DATABASE,
-    CLICKHOUSE_PORT,
-)
-from utils import wait_for_broker
 from logger_config import setup_logging
+from configg import (
+    KAFKA_BROKER, KAFKA_TOPIC, CONSUMER_GROUP,
+    SSL_CAFILE, SSL_CERTFILE, SSL_KEYFILE,
+    CLICKHOUSE_HOST, CLICKHOUSE_PORT, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_DATABASE,
+    POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
+)
 
 logger = logging.getLogger(__name__)
 setup_logging()
 
+async def wait_for_kafka(interval: int = 5):
+    host, port = KAFKA_BROKER.split(":")
+    # utils.wait_for_broker è sync
+    from utils import wait_for_broker
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, wait_for_broker, host, int(port))
+    logger.info("Kafka è pronto")
 
-async def wait_for_postgres(
-    host: str,
-    port: int,
-    user: str,
-    password: str,
-    database: str,
-    interval: float = 2.0,
-    max_retries: int = 30,
-):
+async def wait_for_postgres(max_retries: int = 30, interval: int = 2):
     for i in range(max_retries):
         try:
             conn = await asyncpg.connect(
-                host=host, port=port, user=user, password=password, database=database
+                host=POSTGRES_HOST, port=POSTGRES_PORT,
+                user=POSTGRES_USER, password=POSTGRES_PASSWORD,
+                database=POSTGRES_DB
             )
+            await conn.execute("SELECT 1")
             await conn.close()
             logger.info("Postgres è pronto")
             return
         except Exception:
-            logger.debug("Postgres non pronto (tentativo %d/%d)", i + 1, max_retries)
+            logger.debug("Postgres non pronto (tentativo %d/%d)", i+1, max_retries)
             await asyncio.sleep(interval)
-    raise RuntimeError("Postgres non pronto dopo troppe prove")
+    raise RuntimeError("Postgres non pronto")
 
-
-async def wait_for_clickhouse(
-    interval: float = 2.0, max_retries: int = 30
-):
+async def wait_for_clickhouse(max_retries: int = 30, interval: int = 2):
     for i in range(max_retries):
         try:
             client = CHClient(
-                host=CLICKHOUSE_HOST,
-                port=CLICKHOUSE_PORT,
-                user=CLICKHOUSE_USER,
-                password=CLICKHOUSE_PASSWORD,
-                database=CLICKHOUSE_DATABASE,
+                host=CLICKHOUSE_HOST, port=CLICKHOUSE_PORT,
+                user=CLICKHOUSE_USER, password=CLICKHOUSE_PASSWORD,
+                database=CLICKHOUSE_DATABASE
             )
             client.execute("SELECT 1")
             logger.info("ClickHouse è pronto")
             return
         except Exception:
-            logger.debug("ClickHouse non pronto (tentativo %d/%d)", i + 1, max_retries)
+            logger.debug("ClickHouse non pronto (tentativo %d/%d)", i+1, max_retries)
             await asyncio.sleep(interval)
-    raise RuntimeError("ClickHouse non pronto dopo troppe prove")
-
+    raise RuntimeError("ClickHouse non pronto")
 
 async def consumer_loop():
-    # 1) readiness Kafka (wait_for_broker è sincrono)
-    host, port = KAFKA_BROKER.split(":")
-    await asyncio.get_event_loop().run_in_executor(
-        None, wait_for_broker, host, int(port)
+    # 1) Readiness checks
+    await asyncio.gather(
+        wait_for_kafka(),
+        wait_for_postgres(),
+        wait_for_clickhouse(),
     )
-    logger.info("Kafka è pronto")
 
-    # 2) readiness Postgres e ClickHouse
-    await wait_for_postgres(
-        host=POSTGRES_HOST,
-        port=POSTGRES_PORT,
-        user=POSTGRES_USER,
-        password=POSTGRES_PASSWORD,
-        database=POSTGRES_DB,
+    # 2) Connessione a ClickHouse (sincrona)
+    ch = CHClient(
+        host=CLICKHOUSE_HOST, port=CLICKHOUSE_PORT,
+        user=CLICKHOUSE_USER, password=CLICKHOUSE_PASSWORD,
+        database=CLICKHOUSE_DATABASE
     )
-    await wait_for_clickhouse()
 
-    # 3) SSL context per Kafka
-    ssl_context = ssl.create_default_context(cafile=SSL_CAFILE)
-    ssl_context.load_cert_chain(certfile=SSL_CERTFILE, keyfile=SSL_KEYFILE)
+    # 3) Pool asyncpg per leggere shops
+    pg_pool = await asyncpg.create_pool(
+        host=POSTGRES_HOST, port=POSTGRES_PORT,
+        user=POSTGRES_USER, password=POSTGRES_PASSWORD,
+        database=POSTGRES_DB, min_size=1, max_size=5
+    )
 
-    # 4) Kafka consumer con JSON deserializer
+    # 4) Setup consumer Kafka
     consumer = AIOKafkaConsumer(
         KAFKA_TOPIC,
         bootstrap_servers=[KAFKA_BROKER],
         security_protocol="SSL",
-        ssl_context=ssl_context,
+        ssl_cafile=SSL_CAFILE,
+        ssl_certfile=SSL_CERTFILE,
+        ssl_keyfile=SSL_KEYFILE,
         group_id=CONSUMER_GROUP,
-        auto_offset_reset="earliest",
-        enable_auto_commit=True,
-        value_deserializer=lambda m: json.loads(m.decode("utf-8")),
+        value_deserializer=lambda b: json.loads(b.decode("utf-8"))
     )
     await consumer.start()
 
-    # 5) Connessioni a DB
-    pg_pool = await asyncpg.create_pool(
-        host=POSTGRES_HOST,
-        port=POSTGRES_PORT,
-        user=POSTGRES_USER,
-        password=POSTGRES_PASSWORD,
-        database=POSTGRES_DB,
-    )
-    ch_client = CHClient(
-        host=CLICKHOUSE_HOST,
-        port=CLICKHOUSE_PORT,
-        user=CLICKHOUSE_USER,
-        password=CLICKHOUSE_PASSWORD,
-        database=CLICKHOUSE_DATABASE,
-    )
-
     try:
-        # 6) Loop di consumo
         async for msg in consumer:
-            data = msg.value  # adesso è già dict
-            logger.debug("Ricevuto: %s", data)
-
-            # Inserimento in Postgres
-            await pg_pool.execute(
+            data = msg.value
+            # 5) Trova negozio più vicino in Postgres (usando <-> index)
+            row = await pg_pool.fetchrow(
                 """
-                INSERT INTO gps_events
-                  (user_id, latitude, longitude, timestamp, age, profession, interests)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                SELECT id, name, category,
+                  ST_DistanceSphere(location, ST_MakePoint($1, $2)) AS distance
+                FROM shops
+                ORDER BY location <-> ST_MakePoint($1, $2)
+                LIMIT 1
                 """,
-                data["user_id"],
-                data["latitude"],
-                data["longitude"],
-                data["timestamp"],
-                data["age"],
-                data["profession"],
-                data["interests"],
+                data["longitude"], data["latitude"]
             )
+            shop_id   = row["id"]
+            shop_name = row["name"]
+            distance  = row["distance"]
 
-            # Inserimento in ClickHouse
-            ch_client.execute(
+            # 6) Inserisci l’evento in ClickHouse
+            ch.execute(
                 """
-                INSERT INTO gps_events
-                  (user_id, latitude, longitude, timestamp, age, profession, interests)
+                INSERT INTO user_events
+                  (user_id, latitude, longitude, timestamp, age, profession, interests, shop_id, shop_name, distance)
                 VALUES
                 """,
                 [(
@@ -162,16 +125,21 @@ async def consumer_loop():
                     data["latitude"],
                     data["longitude"],
                     data["timestamp"],
-                    data["age"],
-                    data["profession"],
-                    data["interests"],
+                    data.get("age"),
+                    data.get("profession"),
+                    data.get("interests"),
+                    shop_id,
+                    shop_name,
+                    distance
                 )]
             )
-
+            logger.debug(
+                "Evento user %d → shop %s (%.1f m)",
+                data["user_id"], shop_name, distance
+            )
     finally:
         await consumer.stop()
         await pg_pool.close()
-
 
 if __name__ == "__main__":
     asyncio.run(consumer_loop())
