@@ -4,6 +4,7 @@ import asyncio
 import logging
 import random
 import ssl
+import json
 from datetime import datetime, timezone
 
 import httpx
@@ -80,9 +81,9 @@ async def producer_worker(producer: AIOKafkaProducer, user: tuple[int,int,str,st
     uid, age, profession, interests = user
 
     while True:
-        # prendi un nuovo percorso
         lon1, lat1 = random_point_in_bbox()
         lon2, lat2 = random_point_in_bbox()
+
         try:
             route = await fetch_route(f"{lon1},{lat1}", f"{lon2},{lat2}")
         except Exception as e:
@@ -95,12 +96,13 @@ async def producer_worker(producer: AIOKafkaProducer, user: tuple[int,int,str,st
                 "user_id":     uid,
                 "latitude":    pt["lat"],
                 "longitude":   pt["lon"],
-                "timestamp":   datetime.now(timezone.utc),
+                "timestamp":   datetime.now(timezone.utc).isoformat(),
                 "age":         age,
                 "profession":  profession,
                 "interests":   interests,
             }
             try:
+                # msg viene serializzato in JSON bytes grazie al value_serializer
                 await producer.send_and_wait(KAFKA_TOPIC, value=msg)
                 logger.debug("Utente %d → inviato punto %s", uid, msg)
             except Exception as e:
@@ -108,27 +110,28 @@ async def producer_worker(producer: AIOKafkaProducer, user: tuple[int,int,str,st
             await asyncio.sleep(2)
 
 async def main():
-    # 1) readiness
+    # readiness checks
     await asyncio.gather(
         wait_for_kafka(),
         wait_for_clickhouse(),
         wait_for_osrm()
     )
 
-    # 2) prepara SSLContext per Kafka
+    # prepara SSLContext
     ssl_ctx = ssl.create_default_context(cafile=SSL_CAFILE)
     ssl_ctx.load_cert_chain(certfile=SSL_CERTFILE, keyfile=SSL_KEYFILE)
 
-    # 3) apri producer con ssl_context
+    # inizializza producer con JSON serializer
     producer = AIOKafkaProducer(
         bootstrap_servers=[KAFKA_BROKER],
         security_protocol="SSL",
         ssl_context=ssl_ctx,
+        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
     )
     await producer.start()
 
     try:
-        # 4) carica utenti da ClickHouse
+        # carica utenti
         ch = CHClient(
             host=CLICKHOUSE_HOST, port=CLICKHOUSE_PORT,
             user=CLICKHOUSE_USER, password=CLICKHOUSE_PASSWORD,
@@ -139,7 +142,7 @@ async def main():
             logger.error("Nessun utente trovato in ClickHouse")
             return
 
-        # 5) lancia un worker per ogni utente
+        # un worker per utente
         tasks = [producer_worker(producer, u) for u in users]
         await asyncio.gather(*tasks)
 
