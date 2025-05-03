@@ -77,9 +77,11 @@ async def wait_for_clickhouse(
 
 
 async def consumer_loop():
-    # 1) readiness Kafka
+    # 1) readiness Kafka (wait_for_broker è sincrono)
     host, port = KAFKA_BROKER.split(":")
-    await wait_for_broker(host, int(port))
+    await asyncio.get_event_loop().run_in_executor(
+        None, wait_for_broker, host, int(port)
+    )
     logger.info("Kafka è pronto")
 
     # 2) readiness Postgres e ClickHouse
