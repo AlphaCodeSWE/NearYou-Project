@@ -25,15 +25,21 @@ from configg import (
     CLICKHOUSE_DATABASE,
     CLICKHOUSE_PORT,
 )
-from utils import wait_for_broker, wait_for_clickhouse
+from utils import wait_for_broker
 from logger_config import setup_logging
 
 logger = logging.getLogger(__name__)
 setup_logging()
 
+
 async def wait_for_postgres(
-    host: str, port: int, user: str, password: str, database: str,
-    interval: float = 2.0, max_retries: int = 30
+    host: str,
+    port: int,
+    user: str,
+    password: str,
+    database: str,
+    interval: float = 2.0,
+    max_retries: int = 30,
 ):
     for i in range(max_retries):
         try:
@@ -44,17 +50,39 @@ async def wait_for_postgres(
             logger.info("Postgres è pronto")
             return
         except Exception:
-            logger.debug("Postgres non pronto (tentativo %d/%d)", i+1, max_retries)
+            logger.debug("Postgres non pronto (tentativo %d/%d)", i + 1, max_retries)
             await asyncio.sleep(interval)
     raise RuntimeError("Postgres non pronto dopo troppe prove")
 
 
+async def wait_for_clickhouse(
+    interval: float = 2.0, max_retries: int = 30
+):
+    for i in range(max_retries):
+        try:
+            client = CHClient(
+                host=CLICKHOUSE_HOST,
+                port=CLICKHOUSE_PORT,
+                user=CLICKHOUSE_USER,
+                password=CLICKHOUSE_PASSWORD,
+                database=CLICKHOUSE_DATABASE,
+            )
+            client.execute("SELECT 1")
+            logger.info("ClickHouse è pronto")
+            return
+        except Exception:
+            logger.debug("ClickHouse non pronto (tentativo %d/%d)", i + 1, max_retries)
+            await asyncio.sleep(interval)
+    raise RuntimeError("ClickHouse non pronto dopo troppe prove")
+
+
 async def consumer_loop():
-    # 1) Readiness
+    # 1) readiness Kafka
     host, port = KAFKA_BROKER.split(":")
     await wait_for_broker(host, int(port))
     logger.info("Kafka è pronto")
 
+    # 2) readiness Postgres e ClickHouse
     await wait_for_postgres(
         host=POSTGRES_HOST,
         port=POSTGRES_PORT,
@@ -62,15 +90,13 @@ async def consumer_loop():
         password=POSTGRES_PASSWORD,
         database=POSTGRES_DB,
     )
-
     await wait_for_clickhouse()
-    logger.info("ClickHouse è pronto")
 
-    # 2) SSL context per Kafka
+    # 3) SSL context per Kafka
     ssl_context = ssl.create_default_context(cafile=SSL_CAFILE)
     ssl_context.load_cert_chain(certfile=SSL_CERTFILE, keyfile=SSL_KEYFILE)
 
-    # 3) Kafka consumer
+    # 4) Kafka consumer
     consumer = AIOKafkaConsumer(
         KAFKA_TOPIC,
         bootstrap_servers=[KAFKA_BROKER],
@@ -82,7 +108,7 @@ async def consumer_loop():
     )
     await consumer.start()
 
-    # 4) Connessioni a DB
+    # 5) Connessioni a DB
     pg_pool = await asyncpg.create_pool(
         host=POSTGRES_HOST,
         port=POSTGRES_PORT,
@@ -99,7 +125,7 @@ async def consumer_loop():
     )
 
     try:
-        # 5) Loop di consumo
+        # 6) Loop di consumo
         async for msg in consumer:
             data = msg.value
             logger.debug("Ricevuto: %s", data)
