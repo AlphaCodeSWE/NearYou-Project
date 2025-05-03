@@ -13,6 +13,8 @@ httpx
 langchain-community
 aiofiles
 aiokafka
+asyncpg
+
 
 # per OSRM-based routing nel producer
 polyline
