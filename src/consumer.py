@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import os
-import asyncio
+import ssl
 import json
+import asyncio
 import logging
 
 from aiokafka import AIOKafkaConsumer
@@ -10,19 +11,30 @@ import asyncpg
 
 from logger_config import setup_logging
 from configg import (
-    KAFKA_BROKER, KAFKA_TOPIC, CONSUMER_GROUP,
-    SSL_CAFILE, SSL_CERTFILE, SSL_KEYFILE,
-    CLICKHOUSE_HOST, CLICKHOUSE_PORT, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_DATABASE,
-    POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
+    KAFKA_BROKER,
+    KAFKA_TOPIC,
+    CONSUMER_GROUP,
+    SSL_CAFILE,
+    SSL_CERTFILE,
+    SSL_KEYFILE,
+    CLICKHOUSE_HOST,
+    CLICKHOUSE_PORT,
+    CLICKHOUSE_USER,
+    CLICKHOUSE_PASSWORD,
+    CLICKHOUSE_DATABASE,
+    POSTGRES_HOST,
+    POSTGRES_PORT,
+    POSTGRES_USER,
+    POSTGRES_PASSWORD,
+    POSTGRES_DB,
 )
+from utils import wait_for_broker  # rimane sync
 
 logger = logging.getLogger(__name__)
 setup_logging()
 
-async def wait_for_kafka(interval: int = 5):
+async def wait_for_kafka():
     host, port = KAFKA_BROKER.split(":")
-    # utils.wait_for_broker è sync
-    from utils import wait_for_broker
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, wait_for_broker, host, int(port))
     logger.info("Kafka è pronto")
@@ -68,28 +80,30 @@ async def consumer_loop():
         wait_for_clickhouse(),
     )
 
-    # 2) Connessione a ClickHouse (sincrona)
+    # 2) Crea SSLContext per Kafka
+    ssl_context = ssl.create_default_context(cafile=SSL_CAFILE)
+    ssl_context.load_cert_chain(certfile=SSL_CERTFILE, keyfile=SSL_KEYFILE)
+
+    # 3) Connessione sincrona a ClickHouse
     ch = CHClient(
         host=CLICKHOUSE_HOST, port=CLICKHOUSE_PORT,
         user=CLICKHOUSE_USER, password=CLICKHOUSE_PASSWORD,
         database=CLICKHOUSE_DATABASE
     )
 
-    # 3) Pool asyncpg per leggere shops
+    # 4) Pool asyncpg per Postgres (sola lettura shops)
     pg_pool = await asyncpg.create_pool(
         host=POSTGRES_HOST, port=POSTGRES_PORT,
         user=POSTGRES_USER, password=POSTGRES_PASSWORD,
         database=POSTGRES_DB, min_size=1, max_size=5
     )
 
-    # 4) Setup consumer Kafka
+    # 5) Configura e avvia il consumer Kafka
     consumer = AIOKafkaConsumer(
         KAFKA_TOPIC,
         bootstrap_servers=[KAFKA_BROKER],
         security_protocol="SSL",
-        ssl_cafile=SSL_CAFILE,
-        ssl_certfile=SSL_CERTFILE,
-        ssl_keyfile=SSL_KEYFILE,
+        ssl_context=ssl_context,
         group_id=CONSUMER_GROUP,
         value_deserializer=lambda b: json.loads(b.decode("utf-8"))
     )
@@ -98,10 +112,10 @@ async def consumer_loop():
     try:
         async for msg in consumer:
             data = msg.value
-            # 5) Trova negozio più vicino in Postgres (usando <-> index)
+            # Trova il negozio più vicino
             row = await pg_pool.fetchrow(
                 """
-                SELECT id, name, category,
+                SELECT id, name,
                   ST_DistanceSphere(location, ST_MakePoint($1, $2)) AS distance
                 FROM shops
                 ORDER BY location <-> ST_MakePoint($1, $2)
@@ -109,15 +123,15 @@ async def consumer_loop():
                 """,
                 data["longitude"], data["latitude"]
             )
-            shop_id   = row["id"]
-            shop_name = row["name"]
-            distance  = row["distance"]
+            shop_id, shop_name, distance = row["id"], row["name"], row["distance"]
 
-            # 6) Inserisci l’evento in ClickHouse
+            # Inserisce in ClickHouse
             ch.execute(
                 """
                 INSERT INTO user_events
-                  (user_id, latitude, longitude, timestamp, age, profession, interests, shop_id, shop_name, distance)
+                  (user_id, latitude, longitude, timestamp,
+                   age, profession, interests,
+                   shop_id, shop_name, distance)
                 VALUES
                 """,
                 [(
