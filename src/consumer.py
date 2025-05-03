@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
+import json
 import logging
 import ssl
 
@@ -98,7 +99,7 @@ async def consumer_loop():
     ssl_context = ssl.create_default_context(cafile=SSL_CAFILE)
     ssl_context.load_cert_chain(certfile=SSL_CERTFILE, keyfile=SSL_KEYFILE)
 
-    # 4) Kafka consumer
+    # 4) Kafka consumer con JSON deserializer
     consumer = AIOKafkaConsumer(
         KAFKA_TOPIC,
         bootstrap_servers=[KAFKA_BROKER],
@@ -107,6 +108,7 @@ async def consumer_loop():
         group_id=CONSUMER_GROUP,
         auto_offset_reset="earliest",
         enable_auto_commit=True,
+        value_deserializer=lambda m: json.loads(m.decode("utf-8")),
     )
     await consumer.start()
 
@@ -129,7 +131,7 @@ async def consumer_loop():
     try:
         # 6) Loop di consumo
         async for msg in consumer:
-            data = msg.value
+            data = msg.value  # adesso è già dict
             logger.debug("Ricevuto: %s", data)
 
             # Inserimento in Postgres
