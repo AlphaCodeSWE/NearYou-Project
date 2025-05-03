@@ -3,6 +3,7 @@ import os
 import asyncio
 import logging
 import random
+import ssl
 from datetime import datetime, timezone
 
 import httpx
@@ -27,9 +28,10 @@ setup_logging()
 async def wait_for_osrm(interval: int = 5, max_retries: int = 100):
     for attempt in range(max_retries):
         try:
-            r = await httpx.AsyncClient().get(f"{OSRM_URL}/route/v1/bicycle/0,0;0,0", timeout=5)
+            async with httpx.AsyncClient() as client:
+                r = await client.get(f"{OSRM_URL}/route/v1/bicycle/0,0;0,0", timeout=5)
             if r.status_code < 500:
-                logger.info(" OSRM è pronto")
+                logger.info("OSRM è pronto")
                 return
         except Exception:
             pass
@@ -46,7 +48,7 @@ async def wait_for_clickhouse():
                 database=CLICKHOUSE_DATABASE
             )
             client.execute("SELECT 1")
-            logger.info(" ClickHouse è pronto")
+            logger.info("ClickHouse è pronto")
             return
         except Exception:
             logger.debug("ClickHouse non pronto (tentativo %d/30)", attempt+1)
@@ -56,7 +58,7 @@ async def wait_for_clickhouse():
 async def wait_for_kafka():
     host, port = KAFKA_BROKER.split(":")
     await asyncio.get_event_loop().run_in_executor(None, wait_for_broker, host, int(port))
-    logger.info(" Kafka è pronto")
+    logger.info("Kafka è pronto")
 
 def random_point_in_bbox():
     lat = random.uniform(MILANO_MIN_LAT, MILANO_MAX_LAT)
@@ -81,20 +83,28 @@ async def producer_worker(producer: AIOKafkaProducer, user: tuple[int,int,str,st
         # prendi un nuovo percorso
         lon1, lat1 = random_point_in_bbox()
         lon2, lat2 = random_point_in_bbox()
-        route = await fetch_route(f"{lon1},{lat1}", f"{lon2},{lat2}")
+        try:
+            route = await fetch_route(f"{lon1},{lat1}", f"{lon2},{lat2}")
+        except Exception as e:
+            logger.error("Utente %d: impossibile fetchare percorso: %s", uid, e)
+            await asyncio.sleep(5)
+            continue
 
         for pt in route:
             msg = {
-                "user_id": uid,
-                "latitude": pt["lat"],
-                "longitude": pt["lon"],
-                "timestamp": datetime.now(timezone.utc),
-                "age": age,
-                "profession": profession,
-                "interests": interests,
+                "user_id":     uid,
+                "latitude":    pt["lat"],
+                "longitude":   pt["lon"],
+                "timestamp":   datetime.now(timezone.utc),
+                "age":         age,
+                "profession":  profession,
+                "interests":   interests,
             }
-            await producer.send_and_wait(KAFKA_TOPIC, value=msg)
-            logger.debug("Utente %d → inviato punto %s", uid, msg)
+            try:
+                await producer.send_and_wait(KAFKA_TOPIC, value=msg)
+                logger.debug("Utente %d → inviato punto %s", uid, msg)
+            except Exception as e:
+                logger.error("Utente %d: errore invio Kafka: %s", uid, e)
             await asyncio.sleep(2)
 
 async def main():
@@ -105,18 +115,20 @@ async def main():
         wait_for_osrm()
     )
 
-    # 2) apri producer
+    # 2) prepara SSLContext per Kafka
+    ssl_ctx = ssl.create_default_context(cafile=SSL_CAFILE)
+    ssl_ctx.load_cert_chain(certfile=SSL_CERTFILE, keyfile=SSL_KEYFILE)
+
+    # 3) apri producer con ssl_context
     producer = AIOKafkaProducer(
         bootstrap_servers=[KAFKA_BROKER],
         security_protocol="SSL",
-        ssl_cafile=SSL_CAFILE,
-        ssl_certfile=SSL_CERTFILE,
-        ssl_keyfile=SSL_KEYFILE,
+        ssl_context=ssl_ctx,
     )
     await producer.start()
 
     try:
-        # 3) carica utenti da ClickHouse
+        # 4) carica utenti da ClickHouse
         ch = CHClient(
             host=CLICKHOUSE_HOST, port=CLICKHOUSE_PORT,
             user=CLICKHOUSE_USER, password=CLICKHOUSE_PASSWORD,
@@ -124,10 +136,10 @@ async def main():
         )
         users = ch.execute("SELECT user_id, age, profession, interests FROM users")
         if not users:
-            logger.error(" Nessun utente trovato in ClickHouse")
+            logger.error("Nessun utente trovato in ClickHouse")
             return
 
-        # 4) lancia un worker per ogni utente
+        # 5) lancia un worker per ogni utente
         tasks = [producer_worker(producer, u) for u in users]
         await asyncio.gather(*tasks)
 
