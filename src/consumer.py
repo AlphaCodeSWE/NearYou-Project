@@ -1,100 +1,122 @@
 #!/usr/bin/env python3
-import os
 import asyncio
 import logging
 import ssl
-import json
-from aiokafka import AIOKafkaConsumer
-from clickhouse_driver import Client as CHClient
-import asyncpg
 
-from logger_config import setup_logging
+from aiokafka import AIOKafkaConsumer
+import asyncpg
+from clickhouse_driver import Client as CHClient
+
 from configg import (
-    KAFKA_BROKER, KAFKA_TOPIC, KAFKA_GROUP,
-    SSL_CAFILE, SSL_CERTFILE, SSL_KEYFILE,
-    PG_DSN,
-    CLICKHOUSE_HOST, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD,
-    CLICKHOUSE_PORT, CLICKHOUSE_DATABASE,
+    KAFKA_BROKER,
+    KAFKA_TOPIC,
+    CONSUMER_GROUP,
+    SSL_CAFILE,
+    SSL_CERTFILE,
+    SSL_KEYFILE,
+    POSTGRES_HOST,
+    POSTGRES_USER,
+    POSTGRES_PASSWORD,
+    POSTGRES_DB,
+    POSTGRES_PORT,
+    CLICKHOUSE_HOST,
+    CLICKHOUSE_USER,
+    CLICKHOUSE_PASSWORD,
+    CLICKHOUSE_DATABASE,
+    CLICKHOUSE_PORT,
 )
 from utils import wait_for_broker, wait_for_postgres, wait_for_clickhouse
+from logger_config import setup_logging
 
 logger = logging.getLogger(__name__)
 setup_logging()
 
 async def consumer_loop():
-    # readiness
-    await asyncio.gather(
-        wait_for_broker(*KAFKA_BROKER.split(":")),
-        wait_for_postgres(),
-        wait_for_clickhouse(),
-    )
+    # 1) Readiness checks
+    host, port = KAFKA_BROKER.split(":")
+    await wait_for_broker(host, int(port))
+    logger.info("Kafka è pronto")
 
-    # prepara SSLContext
-    ssl_ctx = ssl.create_default_context(cafile=SSL_CAFILE)
-    ssl_ctx.load_cert_chain(certfile=SSL_CERTFILE, keyfile=SSL_KEYFILE)
+    await wait_for_postgres()
+    logger.info("Postgres è pronto")
 
-    # inizializza consumer
+    await wait_for_clickhouse()
+    logger.info("ClickHouse è pronto")
+
+    # 2) Prepara SSL context per Kafka
+    ssl_context = ssl.create_default_context(cafile=SSL_CAFILE)
+    ssl_context.load_cert_chain(certfile=SSL_CERTFILE, keyfile=SSL_KEYFILE)
+
+    # 3) Istanzia il consumer Kafka
     consumer = AIOKafkaConsumer(
         KAFKA_TOPIC,
         bootstrap_servers=[KAFKA_BROKER],
         security_protocol="SSL",
-        ssl_context=ssl_ctx,
-        group_id=KAFKA_GROUP,
+        ssl_context=ssl_context,
+        group_id=CONSUMER_GROUP,
         auto_offset_reset="earliest",
-        value_deserializer=lambda b: json.loads(b.decode("utf-8")),
+        enable_auto_commit=True,
     )
     await consumer.start()
 
-    # connessioni a DB
-    pg_pool = await asyncpg.create_pool(dsn=PG_DSN)
+    # 4) Connetti ai database
+    pg_pool = await asyncpg.create_pool(
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        database=POSTGRES_DB,
+    )
     ch_client = CHClient(
-        host=CLICKHOUSE_HOST, port=CLICKHOUSE_PORT,
-        user=CLICKHOUSE_USER, password=CLICKHOUSE_PASSWORD,
-        database=CLICKHOUSE_DATABASE
+        host=CLICKHOUSE_HOST,
+        port=CLICKHOUSE_PORT,
+        user=CLICKHOUSE_USER,
+        password=CLICKHOUSE_PASSWORD,
+        database=CLICKHOUSE_DATABASE,
     )
 
     try:
+        # 5) Consuma i messaggi in streaming
         async for msg in consumer:
             data = msg.value
-            user_id   = data["user_id"]
-            lat       = data["latitude"]
-            lon       = data["longitude"]
-            ts        = data["timestamp"]
-            age       = data["age"]
-            profession= data["profession"]
-            interests = data["interests"]
+            logger.debug("Ricevuto: %s", data)
 
-            # 1) salva in Postgres (PostGIS)
-            async with pg_pool.acquire() as conn:
-                await conn.execute(
-                    """
-                    INSERT INTO gps_points (user_id, ts, geom)
-                    VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326))
-                    """,
-                    user_id, ts, lon, lat
-                )
-
-            # 2) salva in ClickHouse
-            ch_client.execute(
+            # --- Inserimento su Postgres ---
+            await pg_pool.execute(
                 """
-                INSERT INTO gps_stream
-                (user_id, timestamp, latitude, longitude, age, profession, interests)
-                VALUES
+                INSERT INTO gps_events
+                  (user_id, latitude, longitude, timestamp, age, profession, interests)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 """,
-                [{
-                    "user_id": user_id,
-                    "timestamp": ts,
-                    "latitude": lat,
-                    "longitude": lon,
-                    "age": age,
-                    "profession": profession,
-                    "interests": interests,
-                }]
+                data["user_id"],
+                data["latitude"],
+                data["longitude"],
+                data["timestamp"],
+                data["age"],
+                data["profession"],
+                data["interests"],
             )
 
-            logger.debug("Messaggio consumato e salvato: %s", data)
+            # --- Inserimento su ClickHouse ---
+            ch_client.execute(
+                """
+                INSERT INTO gps_events
+                  (user_id, latitude, longitude, timestamp, age, profession, interests)
+                VALUES
+                """,
+                [(
+                    data["user_id"],
+                    data["latitude"],
+                    data["longitude"],
+                    data["timestamp"],
+                    data["age"],
+                    data["profession"],
+                    data["interests"],
+                )]
+            )
 
     finally:
+        # 6) Pulizia
         await consumer.stop()
         await pg_pool.close()
 
