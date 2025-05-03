@@ -1,201 +1,159 @@
 #!/usr/bin/env python3
-"""
-Consumer Kafka → arricchisce gli eventi GPS con i POI di Milano
-(lookup PostGIS) → chiama l'LLM → salva in ClickHouse.
-"""
-
+import os
 import json
+import asyncio
 import logging
-import random
-import time
 from datetime import datetime
 
 import httpx
 import psycopg2
-from kafka import KafkaConsumer, TopicPartition
-from clickhouse_driver import Client
-from clickhouse_driver.errors import ServerException
+from aiokafka import AIOKafkaConsumer
+from aiokafka.structs import TopicPartition
+from clickhouse_driver import Client as CHClient
 
 from logger_config import setup_logging
-from utils import wait_for_broker
-from db_utils import wait_for_clickhouse_database
 from configg import (
-    # Kafka
-    KAFKA_BROKER, KAFKA_TOPIC, CONSUMER_GROUP,
+    KAFKA_BROKER, KAFKA_TOPIC,
     SSL_CAFILE, SSL_CERTFILE, SSL_KEYFILE,
-    # ClickHouse
     CLICKHOUSE_HOST, CLICKHOUSE_PORT,
     CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_DATABASE,
-    # Postgres
-    POSTGRES_HOST, POSTGRES_PORT,
-    POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
-    # micro-servizio LLM
+    POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
     MESSAGE_GENERATOR_URL,
 )
+from utils import wait_for_broker
 
-# ─── logging & readiness ────────────────────────────────────────────────────
-setup_logging()
 logger = logging.getLogger(__name__)
+setup_logging()
 
-# 1) Attendo Kafka
-logger.info("Attendo Kafka …")
-wait_for_broker("kafka", 9093)
+# Quanti LLM call in parallelo
+LLM_CONCURRENCY = 20
 
-# 2) Attendo Postgres (porta TCP)
-logger.info("Attendo Postgres …")
-wait_for_broker(POSTGRES_HOST, POSTGRES_PORT)
+async def wait_services():
+    # Kafka
+    host, port = KAFKA_BROKER.split(":")
+    await asyncio.get_event_loop().run_in_executor(None, wait_for_broker, host, int(port))
+    logger.info(" Kafka è pronto")
+    # Postgres
+    await asyncio.get_event_loop().run_in_executor(None, wait_for_broker, POSTGRES_HOST, POSTGRES_PORT)
+    logger.info(" Postgres è pronto")
+    # ClickHouse
+    await asyncio.get_event_loop().run_in_executor(None, wait_for_broker, CLICKHOUSE_HOST, CLICKHOUSE_PORT)
+    logger.info(" ClickHouse è pronto")
 
-# 3) Attendo ClickHouse (porta TCP)
-logger.info("Attendo ClickHouse …")
-wait_for_broker("clickhouse-server", CLICKHOUSE_PORT)
+async def wait_for_first_message(consumer: AIOKafkaConsumer):
+    tp = TopicPartition(KAFKA_TOPIC, 0)
+    while True:
+        begin = await consumer.beginning_offsets([tp])
+        end   = await consumer.end_offsets([tp])
+        if end[tp] > begin[tp]:
+            logger.info(" Trovato almeno un messaggio sul topic, comincio a consumare")
+            return
+        logger.debug("Nessun messaggio ancora (begin=%d, end=%d), riprovo tra 1s…", begin[tp], end[tp])
+        await asyncio.sleep(1)
 
-# ─── ClickHouse client & schema readiness ──────────────────────────────────
-ch = Client(
-    host=CLICKHOUSE_HOST,
-    port=CLICKHOUSE_PORT,
-    user=CLICKHOUSE_USER,
-    password=CLICKHOUSE_PASSWORD,
-    database=CLICKHOUSE_DATABASE,
-)
+async def fetch_ad(user: dict, poi: dict) -> str:
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(MESSAGE_GENERATOR_URL, json={"user": user, "poi": poi}, timeout=10.0)
+        resp.raise_for_status()
+        return resp.json().get("message", "")
 
-# 4) Attendo che il database esista
-wait_for_clickhouse_database(ch, CLICKHOUSE_DATABASE)
+async def handle_message(msg, pg_conn, pg_cur, ch, sem):
+    event = json.loads(msg.value)
+    lat, lon = event["latitude"], event["longitude"]
 
-# 5) Attendo che le tabelle ClickHouse siano già create
-def wait_for_ch_table(table_name: str, client: Client, interval: int = 2, max_retries: int = 30):
-    retries = 0
-    while retries < max_retries:
-        try:
-            existing = [t[0] for t in client.execute("SHOW TABLES")]
-            if table_name in existing:
-                logger.info(f"Tabella ClickHouse '{table_name}' pronta.")
-                return
-        except ServerException as e:
-            logger.warning(f"Errore controllo tabella '{table_name}': {e}")
-        time.sleep(interval)
-        retries += 1
-    raise RuntimeError(f"Tabella ClickHouse '{table_name}' non trovata dopo {max_retries} tentativi.")
-
-wait_for_ch_table("users",       ch)
-wait_for_ch_table("user_events", ch)
-
-# ─── Kafka consumer setup ───────────────────────────────────────────────────
-consumer = KafkaConsumer(
-    KAFKA_TOPIC,
-    bootstrap_servers=[KAFKA_BROKER],
-    security_protocol="SSL",
-    ssl_check_hostname=True,
-    ssl_cafile=SSL_CAFILE,
-    ssl_certfile=SSL_CERTFILE,
-    ssl_keyfile=SSL_KEYFILE,
-    auto_offset_reset="earliest",
-    group_id=CONSUMER_GROUP,
-    value_deserializer=lambda m: json.loads(m.decode("utf-8")),
-)
-
-# 6) Verifica continua che il producer abbia già inviato almeno un messaggio
-logger.info("Controllo continuo che il producer abbia pubblicato almeno un messaggio…")
-tp = TopicPartition(KAFKA_TOPIC, 0)
-while True:
-    beginning = consumer.beginning_offsets([tp])[tp]
-    end       = consumer.end_offsets([tp])[tp]
-    if end > beginning:
-        logger.info("Trovati %d messaggi sul topic %s → parto.", end - beginning, KAFKA_TOPIC)
-        break
-    logger.debug("Nessun messaggio ancora (begin=%d, end=%d), riprovo tra 1s…", beginning, end)
-    time.sleep(1)
-
-# ─── PostGIS connection ─────────────────────────────────────────────────────
-logger.info("Apro connessione a Postgres …")
-pg = psycopg2.connect(
-    host=POSTGRES_HOST,
-    port=POSTGRES_PORT,
-    dbname=POSTGRES_DB,
-    user=POSTGRES_USER,
-    password=POSTGRES_PASSWORD,
-)
-pg.autocommit = True
-pg_cur = pg.cursor()
-
-def nearest_shop(lat: float, lon: float, max_m: int = 200):
-    sql = """
+    # 1) lookup negozio in PostGIS
+    pg_cur.execute(
+        """
         SELECT shop_name, category
         FROM shops
         WHERE ST_DWithin(
-            geom::geography,
-            ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
-            %s
+          geom::geography,
+          ST_SetSRID(ST_MakePoint(%s,%s),4326)::geography,
+          200
         )
         ORDER BY ST_Distance(
-            geom::geography,
-            ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography
+          geom::geography,
+          ST_SetSRID(ST_MakePoint(%s,%s),4326)::geography
         )
-        LIMIT 1;
-    """
-    pg_cur.execute(sql, (lon, lat, max_m, lon, lat))
-    row = pg_cur.fetchone()
-    return row if row else (None, None)
-
-# ─── consume loop ───────────────────────────────────────────────────────────
-logger.info("Consumer in ascolto su topic: %s", KAFKA_TOPIC)
-
-for msg in consumer:
-    event = msg.value
-
-    # 1) timestamp
-    try:
-        ts = datetime.fromisoformat(event["timestamp"])
-    except (KeyError, ValueError) as exc:
-        logger.warning("Timestamp malformato: %s", exc)
-        continue
-
-    lat, lon = event["latitude"], event["longitude"]
-
-    # 2) lookup POI in PostGIS
-    shop_name, shop_cat = nearest_shop(lat, lon)
-    shop_name = shop_name or ""
-    shop_cat  = shop_cat  or ""
-
-    # 3) chiamata micro-servizio LLM
-    try:
-        resp = httpx.post(
-            MESSAGE_GENERATOR_URL,
-            json={
-                "user": {
-                    "age":        event["age"],
-                    "profession": event["profession"],
-                    "interests":  event["interests"],
-                },
-                "poi": {
-                    "name":        shop_name or "negozio vicino",
-                    "category":    shop_cat  or "varie",
-                    "description": "",
-                },
-            },
-            timeout=10.0,
-        )
-        resp.raise_for_status()
-        ad_text = resp.json().get("message", "")
-    except Exception as exc:
-        logger.error("Errore LLM: %s", exc)
-        ad_text = ""
-
-    # 4) inserimento in ClickHouse
-    record = (
-        random.randint(1_000_000_000, 9_999_999_999),
-        ts,
-        event["user_id"],
-        lat,
-        lon,
-        0.0,
-        shop_name,
-        ad_text,
+        LIMIT 1
+        """,
+        (lon, lat, lon, lat)
     )
+    shop_name, shop_cat = pg_cur.fetchone() or ("", "")
+
+    # 2) generazione promo con semaforo
+    async with sem:
+        ad = await fetch_ad(
+            {"age": event["age"], "profession": event["profession"], "interests": event["interests"]},
+            {"name": shop_name or "negozio vicino", "category": shop_cat or "varie", "description": ""}
+        )
+
+    # 3) inserimento in ClickHouse
     ch.execute(
-        "INSERT INTO user_events "
-        "(event_id,event_time,user_id,latitude,longitude,poi_range,poi_name,poi_info) "
-        "VALUES",
-        [record]
+        """
+        INSERT INTO user_events
+          (event_id,event_time,user_id,latitude,longitude,poi_range,poi_name,poi_info)
+        VALUES
+        """,
+        [(
+            int(datetime.utcnow().timestamp() * 1e6) % 1_000_000_000,  # event_id pseudo‐unico
+            datetime.fromisoformat(event["timestamp"]),
+            event["user_id"],
+            lat,
+            lon,
+            0.0,
+            shop_name,
+            ad
+        )]
+    )
+    logger.debug("Processed user %d → poi='%s'", event["user_id"], shop_name or "N/A")
+
+async def consumer_loop():
+    # apro connessione sincrona a Postgres in executor
+    loop = asyncio.get_event_loop()
+    pg_conn = await loop.run_in_executor(
+        None,
+        lambda: psycopg2.connect(
+            host=POSTGRES_HOST, port=POSTGRES_PORT,
+            dbname=POSTGRES_DB, user=POSTGRES_USER, password=POSTGRES_PASSWORD
+        )
+    )
+    pg_conn.autocommit = True
+    pg_cur = pg_conn.cursor()
+
+    # ClickHouse client
+    ch = CHClient(
+        host=CLICKHOUSE_HOST, port=CLICKHOUSE_PORT,
+        user=CLICKHOUSE_USER, password=CLICKHOUSE_PASSWORD,
+        database=CLICKHOUSE_DATABASE
     )
 
-    logger.info("Evento %s inserito - poi_name='%s'", record[0], shop_name or "N/A")
+    # consumer async
+    consumer = AIOKafkaConsumer(
+        KAFKA_TOPIC,
+        bootstrap_servers=[KAFKA_BROKER],
+        security_protocol="SSL",
+        ssl_cafile=SSL_CAFILE,
+        ssl_certfile=SSL_CERTFILE,
+        ssl_keyfile=SSL_KEYFILE,
+        auto_offset_reset="earliest",
+        group_id="gps_async_consumers"
+    )
+    await consumer.start()
+
+    # aspetto il primo messaggio dal producer
+    await wait_for_first_message(consumer)
+
+    sem = asyncio.Semaphore(LLM_CONCURRENCY)
+    try:
+        async for msg in consumer:
+            # lancio il task in background
+            asyncio.create_task(handle_message(msg, pg_conn, pg_cur, ch, sem))
+    finally:
+        await consumer.stop()
+        pg_cur.close()
+        pg_conn.close()
+
+if __name__ == "__main__":
+    asyncio.run(wait_services())
+    asyncio.run(consumer_loop())

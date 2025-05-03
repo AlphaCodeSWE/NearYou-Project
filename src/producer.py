@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
-"""
-Invia in streaming su Kafka un punto GPS per ogni utente,
-ciclando sui percorsi e rigenerandoli al termine.
-"""
-import json
-import random
-import time
+import os
+import asyncio
 import logging
+import random
 from datetime import datetime, timezone
 
-from kafka import KafkaProducer
 import httpx
+from aiokafka import AIOKafkaProducer
 from clickhouse_driver import Client as CHClient
 
 from logger_config import setup_logging
@@ -25,112 +21,118 @@ from configg import (
 )
 from utils import wait_for_broker
 
-setup_logging()
 logger = logging.getLogger(__name__)
+setup_logging()
 
-def wait_for_osrm(url: str, interval: int = 30, max_retries: int = 500) -> None:
-    """Stesso healthcheck di prima."""
-    for attempt in range(1, max_retries + 1):
+async def wait_for_osrm(interval: int = 5, max_retries: int = 100):
+    for attempt in range(max_retries):
         try:
-            r = httpx.get(f"{url}/route/v1/bicycle/0,0;0,0",
-                          params={"overview": "false"}, timeout=10)
+            r = await httpx.AsyncClient().get(f"{OSRM_URL}/route/v1/bicycle/0,0;0,0", timeout=5)
             if r.status_code < 500:
-                logger.info("OSRM pronto (tentativo %d/%d).", attempt, max_retries)
+                logger.info(" OSRM è pronto")
                 return
         except Exception:
             pass
-        time.sleep(interval)
-    raise RuntimeError("OSRM non pronto dopo troppe volte.")
+        logger.debug("OSRM non pronto (tentativo %d/%d)", attempt+1, max_retries)
+        await asyncio.sleep(interval)
+    raise RuntimeError("OSRM non pronto dopo troppe prove")
 
-def fetch_route_osrm(start: str, end: str) -> list[dict]:
-    """Restituisce lista di punti {lat, lon} per un percorso."""
-    resp = httpx.get(
-        f"{OSRM_URL}/route/v1/bicycle/{start};{end}",
-        params={"overview": "full", "geometries": "geojson"},
-        timeout=10
-    )
-    resp.raise_for_status()
-    coords = resp.json()["routes"][0]["geometry"]["coordinates"]
-    return [{"lon": lon, "lat": lat} for lon, lat in coords]
+async def wait_for_clickhouse():
+    for attempt in range(30):
+        try:
+            client = CHClient(
+                host=CLICKHOUSE_HOST, port=CLICKHOUSE_PORT,
+                user=CLICKHOUSE_USER, password=CLICKHOUSE_PASSWORD,
+                database=CLICKHOUSE_DATABASE
+            )
+            client.execute("SELECT 1")
+            logger.info(" ClickHouse è pronto")
+            return
+        except Exception:
+            logger.debug("ClickHouse non pronto (tentativo %d/30)", attempt+1)
+            await asyncio.sleep(2)
+    raise RuntimeError("ClickHouse non pronto")
 
-def random_point_in_bbox() -> tuple[float, float]:
+async def wait_for_kafka():
+    host, port = KAFKA_BROKER.split(":")
+    await asyncio.get_event_loop().run_in_executor(None, wait_for_broker, host, int(port))
+    logger.info(" Kafka è pronto")
+
+def random_point_in_bbox():
     lat = random.uniform(MILANO_MIN_LAT, MILANO_MAX_LAT)
     lon = random.uniform(MILANO_MIN_LON, MILANO_MAX_LON)
     return lon, lat
 
-# 1) Attendi i servizi
-logger.info("Attendo Kafka…")
-wait_for_broker("kafka", 9093)
-logger.info("Attendo OSRM…")
-wait_for_osrm(OSRM_URL)
+async def fetch_route(start: str, end: str):
+    async with httpx.AsyncClient() as client:
+        r = await client.get(
+            f"{OSRM_URL}/route/v1/bicycle/{start};{end}",
+            params={"overview": "full", "geometries": "geojson"},
+            timeout=10
+        )
+    r.raise_for_status()
+    coords = r.json()["routes"][0]["geometry"]["coordinates"]
+    return [{"lon": lon, "lat": lat} for lon, lat in coords]
 
-# 2) Imposta il producer Kafka
-producer = KafkaProducer(
-    bootstrap_servers=[KAFKA_BROKER],
-    security_protocol="SSL",
-    ssl_check_hostname=True,
-    ssl_cafile=SSL_CAFILE,
-    ssl_certfile=SSL_CERTFILE,
-    ssl_keyfile=SSL_KEYFILE,
-    value_serializer=lambda v: json.dumps(v, default=str).encode("utf-8"),
-)
-logger.info("Producer pronto sul topic %s", KAFKA_TOPIC)
+async def producer_worker(producer: AIOKafkaProducer, user: tuple[int,int,str,str]):
+    uid, age, profession, interests = user
 
-# 3) Carica tutti i profili utenti da ClickHouse
-ch = CHClient(
-    host=CLICKHOUSE_HOST,
-    port=CLICKHOUSE_PORT,
-    user=CLICKHOUSE_USER,
-    password=CLICKHOUSE_PASSWORD,
-    database=CLICKHOUSE_DATABASE
-)
-users = ch.execute("SELECT user_id, age, profession, interests FROM users")
-if not users:
-    logger.error("Nessun utente trovato: esegui generate_users prima.")
-    exit(1)
+    while True:
+        # prendi un nuovo percorso
+        lon1, lat1 = random_point_in_bbox()
+        lon2, lat2 = random_point_in_bbox()
+        route = await fetch_route(f"{lon1},{lat1}", f"{lon2},{lat2}")
 
-# 4) Prepara un percorso e un indice per ciascun utente
-user_routes = {}
-route_indices = {}
-for uid, age, profession, interests in users:
-    # genera un percorso random iniziale
-    lon1, lat1 = random_point_in_bbox()
-    lon2, lat2 = random_point_in_bbox()
-    route = fetch_route_osrm(f"{lon1},{lat1}", f"{lon2},{lat2}")
-    user_routes[uid] = route
-    route_indices[uid] = 0
+        for pt in route:
+            msg = {
+                "user_id": uid,
+                "latitude": pt["lat"],
+                "longitude": pt["lon"],
+                "timestamp": datetime.now(timezone.utc),
+                "age": age,
+                "profession": profession,
+                "interests": interests,
+            }
+            await producer.send_and_wait(KAFKA_TOPIC, value=msg)
+            logger.debug("Utente %d → inviato punto %s", uid, msg)
+            await asyncio.sleep(2)
 
-logger.info("Setup completato per %d utenti.", len(users))
+async def main():
+    # 1) readiness
+    await asyncio.gather(
+        wait_for_kafka(),
+        wait_for_clickhouse(),
+        wait_for_osrm()
+    )
 
-# 5) Loop principale: un invio per UTENTE a ogni iterazione
-while True:
-    for uid, age, profession, interests in users:
-        idx = route_indices[uid]
-        route = user_routes[uid]
+    # 2) apri producer
+    producer = AIOKafkaProducer(
+        bootstrap_servers=[KAFKA_BROKER],
+        security_protocol="SSL",
+        ssl_cafile=SSL_CAFILE,
+        ssl_certfile=SSL_CERTFILE,
+        ssl_keyfile=SSL_KEYFILE,
+    )
+    await producer.start()
 
-        # Se il percorso è finito, rigenerane uno nuovo
-        if idx >= len(route):
-            lon1, lat1 = random_point_in_bbox()
-            lon2, lat2 = random_point_in_bbox()
-            route = fetch_route_osrm(f"{lon1},{lat1}", f"{lon2},{lat2}")
-            user_routes[uid] = route
-            idx = 0
+    try:
+        # 3) carica utenti da ClickHouse
+        ch = CHClient(
+            host=CLICKHOUSE_HOST, port=CLICKHOUSE_PORT,
+            user=CLICKHOUSE_USER, password=CLICKHOUSE_PASSWORD,
+            database=CLICKHOUSE_DATABASE
+        )
+        users = ch.execute("SELECT user_id, age, profession, interests FROM users")
+        if not users:
+            logger.error(" Nessun utente trovato in ClickHouse")
+            return
 
-        pt = route[idx]
-        route_indices[uid] = idx + 1
+        # 4) lancia un worker per ogni utente
+        tasks = [producer_worker(producer, u) for u in users]
+        await asyncio.gather(*tasks)
 
-        # Costruisci e invia il messaggio
-        message = {
-            "user_id":      uid,
-            "latitude":     pt["lat"],
-            "longitude":    pt["lon"],
-            "timestamp":    datetime.now(timezone.utc),
-            "age":          age,
-            "profession":   profession,
-            "interests":    interests,
-        }
-        producer.send(KAFKA_TOPIC, message)
-        logger.info("Inviato per utente %s: %s", uid, message)
+    finally:
+        await producer.stop()
 
-    # Attendi 2 secondi prima della prossima tornata
-    #time.sleep(2)
+if __name__ == "__main__":
+    asyncio.run(main())

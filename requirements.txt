@@ -12,6 +12,7 @@ openai
 httpx
 langchain-community
 aiofiles
+aiokafka
 
 # per OSRM-based routing nel producer
 polyline
