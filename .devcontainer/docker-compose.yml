@@ -418,6 +418,21 @@ services:
       - clickhouse
       - postgres
 
+  admin-frontend:
+    build:
+      context: ../dashboard-admin/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env                
+    depends_on:
+      - admin-auth
+      - admin-realtime
+      - admin-analytics
+    restart: unless-stopped
+
+
 
  
 

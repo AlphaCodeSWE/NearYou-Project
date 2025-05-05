@@ -1,0 +1,16 @@
+// dashboard-admin/frontend/tsconfig.json
+{
+    "compilerOptions": {
+      "target": "ES6",
+      "lib": ["DOM", "ES6"],
+      "jsx": "react-jsx",
+      "module": "ESNext",
+      "moduleResolution": "Node",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true
+    },
+    "include": ["src"]
+  }
+  
