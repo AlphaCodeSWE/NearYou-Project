@@ -371,17 +371,17 @@ services:
   
   # —————————————— DASHBOARD “ADMIN” ——————————————
   admin-auth:
-    container_name: admin-auth
     build:
-      context: ./dashboard-admin/backend/auth
-      dockerfile: Dockerfile
+      
+      context: ..
+      dockerfile: dashboard-admin/backend/auth/Dockerfile
     command: uvicorn app:app --host 0.0.0.0 --port 8002
     ports:
       - "8002:8002"
-    environment:
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_ALGORITHM=${JWT_ALGORITHM}
-      - JWT_EXPIRATION_S=${JWT_EXPIRATION_S}
+    env_file:
+      - .env    
+    restart: unless-stopped
+
  
 
 
