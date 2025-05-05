@@ -19,7 +19,7 @@ RUN yarn install --frozen-lockfile --non-interactive || yarn install --non-inter
 # 5) Copia tutto il resto del sorgente
 COPY . .
 
-# 6) (opzionale) se hai uno script di build, eseguilo qui
+
 RUN yarn build
 
 # 7) Espone la porta che userai in docker-compose e lancia in dev
