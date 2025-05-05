@@ -1,17 +1,21 @@
 # dashboard-admin/frontend/Dockerfile
-FROM node:18-alpine
+FROM node:16-alpine
 
-# 1) Imposta la cartella di lavoro
 WORKDIR /app
 
-# 2) Copia solo package.json e installa
-COPY package.json ./
-RUN yarn install
+# 1) Copia solo i file di dipendenze e configurazione TS
+COPY package.json yarn.lock tsconfig.json ./
 
-# 3) Copia il resto del codice
+# 2) Installa le dipendenze 
+RUN yarn install --frozen-lockfile
+
+# 3) Copia tutto il resto del frontend
 COPY . .
 
-EXPOSE 3000
 
-# 5) Avvia in dev mode
+RUN yarn build
+
+# 5) Porta in ascolto e comando di avvio dev
+ENV CI=true
+EXPOSE 3000
 CMD ["yarn", "start"]
