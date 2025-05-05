@@ -1,27 +1,20 @@
-# dashboard-admin/frontend/Dockerfile
-
-# 1) Prendiamo Node 23-alpine3.19 esattamente al digest verificato
-ARG NODE_VERSION=23-alpine3.19@sha256:21cb32fcd4012de64c546bc0d5cbde405362f6c3d515ba81d04ebbcd373daa9e
-FROM node:${NODE_VERSION}
+FROM node:20-alpine3.19
 
 WORKDIR /app
 
-# 2) Per debug, vediamo subito le versioni
-RUN node --version && yarn --version
+# 1) Copia file di definizione delle dipendenze
+COPY package.json yarn.lock ./
 
-# 3) Copia solo il manifest delle dipendenze
-COPY package.json tsconfig.json ./
+# 2) Installa yarn
+RUN npm install -g yarn
 
-# 4) Installa le dipendenze
-#    - se c'è yarn.lock, lo rispetta; altrimenti ne genera uno nuovo
-RUN yarn install --frozen-lockfile --non-interactive || yarn install --non-interactive
+# 3) Installa le dipendenze
+RUN yarn install --frozen-lockfile --non-interactive
 
-# 5) Copia tutto il resto del sorgente
+# 4) Copia tutto il resto dei sorgenti
 COPY . .
-
 
 RUN yarn build
 
-# 7) Espone la porta che userai in docker-compose e lancia in dev
-EXPOSE 3000
+ENV CI=true
 CMD ["yarn", "start"]
