@@ -1,30 +1,31 @@
 import os
+from clickhouse_driver import Client as CHClient
 import asyncpg
-from clickhouse_driver import Client
+from dotenv import load_dotenv
 
-_CH_CLIENT = None
-async def get_clickhouse_client():
-    global _CH_CLIENT
-    if _CH_CLIENT is None:
-        _CH_CLIENT = Client(
-            host=os.getenv("CLICKHOUSE_HOST"),
-            port=int(os.getenv("CLICKHOUSE_PORT")),
-            user=os.getenv("CLICKHOUSE_USER"),
-            password=os.getenv("CLICKHOUSE_PASSWORD"),
-            database=os.getenv("CLICKHOUSE_DATABASE"),
-        )
-    return _CH_CLIENT
+load_dotenv()
 
+# ClickHouse
+def get_clickhouse_client() -> CHClient:
+    return CHClient(
+        host=os.getenv("CLICKHOUSE_HOST"),
+        port=int(os.getenv("CLICKHOUSE_PORT", 9000)),
+        user=os.getenv("CLICKHOUSE_USER"),
+        password=os.getenv("CLICKHOUSE_PASSWORD"),
+        database=os.getenv("CLICKHOUSE_DATABASE"),
+    )
 
-_PG_POOL = None
+# Postgres
+_pg_pool = None
+
 async def get_postgres_pool():
-    global _PG_POOL
-    if _PG_POOL is None:
-        _PG_POOL = await asyncpg.create_pool(
-            host=os.getenv("POSTGRES_HOST"),
-            port=int(os.getenv("POSTGRES_PORT", 5432)),
+    global _pg_pool
+    if _pg_pool is None:
+        _pg_pool = await asyncpg.create_pool(
             user=os.getenv("POSTGRES_USER"),
             password=os.getenv("POSTGRES_PASSWORD"),
             database=os.getenv("POSTGRES_DB"),
+            host=os.getenv("POSTGRES_HOST"),
+            port=int(os.getenv("POSTGRES_PORT", 5432)),
         )
-    return _PG_POOL
+    return _pg_pool
