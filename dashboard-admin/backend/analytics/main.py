@@ -1,11 +1,7 @@
+# dashboard-admin/backend/analytics/main.py
+
 from fastapi import FastAPI
-from router import router
+from router import router as analytics_router
 
-app = FastAPI(
-    title="Admin Analytics",
-    description="API per statistiche e dati di dashboard-admin",
-    version="0.1.0"
-)
-
-# include tutte le route definite in router.py
-app.include_router(router, prefix="/analytics")
+app = FastAPI(title="Admin Analytics")
+app.include_router(analytics_router)
