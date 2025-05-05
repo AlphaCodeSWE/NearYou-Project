@@ -1,8 +1,10 @@
 from pydantic import BaseModel
 
-class LoginForm(BaseModel):
+class AdminUser(BaseModel):
     username: str
     password: str
 
 
-admin_user = {"username": "admin", "password": "admin"}
+admins = {
+    "admin": AdminUser(username="admin", password="admin")
+}

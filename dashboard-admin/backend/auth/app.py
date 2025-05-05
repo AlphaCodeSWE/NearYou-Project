@@ -1,31 +1,17 @@
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from models import admin_user
-from security import create_access_token, verify_token
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from models import admins
+from security import create_access_token
 
-app = FastAPI(title="Admin Auth Service")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+app = FastAPI()
 
 @app.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    if (form_data.username != admin_user["username"]
-        or form_data.password != admin_user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_access_token({"sub": form_data.username})
+    user = admins.get(form_data.username)
+    if not user or user.password != form_data.password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect username or password"
+        )
+    token = create_access_token(user.username)
     return {"access_token": token, "token_type": "bearer"}
-
-def get_current_admin(token: str = Depends(oauth2_scheme)):
-    payload = verify_token(token)
-    if not payload or payload.get("sub") != admin_user["username"]:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    return payload
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
-
-# endpoint di test protetto
-@app.get("/me")
-async def read_current_admin(_=Depends(get_current_admin)):
-    return {"username": admin_user["username"]}

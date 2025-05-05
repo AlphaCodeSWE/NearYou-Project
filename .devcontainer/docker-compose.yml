@@ -371,88 +371,17 @@ services:
   
   # —————————————— DASHBOARD “ADMIN” ——————————————
   admin-auth:
+    container_name: admin-auth
     build:
-      context: ../dashboard-admin/backend/auth
+      context: ./dashboard-admin/backend/auth
       dockerfile: Dockerfile
-    command: uvicorn app:app --host 0.0.0.0 --port 8000
+    command: uvicorn app:app --host 0.0.0.0 --port 8002
     ports:
-      - "8002:8000"
+      - "8002:8002"
     environment:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_ALGORITHM=${JWT_ALGORITHM}
       - JWT_EXPIRATION_S=${JWT_EXPIRATION_S}
-    depends_on:
-      - kafka
-      - clickhouse
-      - postgres
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  admin-realtime:
-    build:
-      context: ../dashboard-admin/backend/realtime
-      dockerfile: Dockerfile
-    command: uvicorn ws:app --host 0.0.0.0 --port 8000
-    ports:
-      - "8005:8000"
-    environment:
-      - KAFKA_BROKER=${KAFKA_BROKER}
-      - KAFKA_TOPIC=${KAFKA_TOPIC}
-      - CONSUMER_GROUP=${CONSUMER_GROUP}
-    depends_on:
-      - admin-auth
-      - kafka
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  admin-analytics:
-    build:
-      context: ../dashboard-admin/backend/analytics
-      dockerfile: Dockerfile
-    command: uvicorn router:app --host 0.0.0.0 --port 8000
-    ports:
-      - "8006:8000"
-    environment:
-      - CLICKHOUSE_HOST=${CLICKHOUSE_HOST}
-      - CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE}
-      - CLICKHOUSE_USER=${CLICKHOUSE_USER}
-      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    depends_on:
-      - admin-auth
-      - clickhouse
-      - postgres
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  admin-frontend:
-    build:
-      context: ../dashboard-admin/frontend
-      dockerfile: Dockerfile
-    command: yarn start
-    ports:
-      - "3001:3000"
-    environment:
-      - REACT_APP_AUTH_URL=http://admin-auth:8000
-      - REACT_APP_WS_URL=ws://admin-realtime:8000
-      - REACT_APP_API_URL=http://admin-analytics:8000
-    depends_on:
-      - admin-auth
-      - admin-realtime
-      - admin-analytics
-
  
 
 
