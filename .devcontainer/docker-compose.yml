@@ -414,7 +414,7 @@ services:
       - .env
     depends_on:
       - admin-auth
-      - clickhouse-server
+      - clickhouse
       - postgres-postgis
 
 
