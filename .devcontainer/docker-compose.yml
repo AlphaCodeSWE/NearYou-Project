@@ -382,12 +382,14 @@ services:
 
   admin-realtime:
     build:
-
-      context: ../dashboard-admin/backend/realtime
+      context: ./dashboard-admin/backend/realtime
       dockerfile: Dockerfile
     command: uvicorn ws:app --host 0.0.0.0 --port 8002
     ports:
-      - "8004:8002"
+      - "8004:8002"          # esposto su 8004 per non collidere, 8003 già usata da user-dashbaord
+    volumes:
+      - ..:/workspace:cached
+      - ../certs:/workspace/certs:ro   
     env_file:
       - .env
     environment:
@@ -400,6 +402,7 @@ services:
     depends_on:
       - admin-auth
       - kafka
+
 
 
  
