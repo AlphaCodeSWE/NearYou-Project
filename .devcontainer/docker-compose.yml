@@ -372,19 +372,22 @@ services:
   # —————————————— DASHBOARD “ADMIN” ——————————————
   admin-auth:
     build:
-      context: ..                                  
-      dockerfile: dashboard-admin/backend/auth/Dockerfile
+      context: ../dashboard-admin/backend/auth
+      dockerfile: Dockerfile
+    command: uvicorn app:app --host 0.0.0.0 --port 8000
     ports:
-      - "8002:8000"
+      - "8002:8000"      
     env_file:
-      - .env   
+      - .env
+    depends_on:
+      - clickhouse
+      - postgres
     restart: unless-stopped
-
   admin-realtime:
     build:
       context: ../dashboard-admin/backend/realtime
       dockerfile: Dockerfile
-    command: uvicorn ws:app --host 0.0.0.0 --port 8002
+    command: uvicorn ws:app --host 0.0.0.0 --port 8000
     ports:
       - "8004:8000"          # esposto su 8004 per non collidere, 8003 già usata da user-dashbaord
     volumes:
