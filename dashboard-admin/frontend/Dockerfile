@@ -1,19 +1,17 @@
 # dashboard-admin/frontend/Dockerfile
-
 FROM node:18-alpine
 
-# 2) cartella di lavoro
+# 1) Imposta la cartella di lavoro
 WORKDIR /app
 
+# 2) Copia solo package.json e installa
+COPY package.json ./
+RUN yarn install
 
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
-
-# 4) copia il resto del codice
+# 3) Copia il resto del codice
 COPY . .
 
-# 5) esponi la porta del dev‐server React
 EXPOSE 3000
 
-# 6) comando di default: avvia il dev‐server
+# 5) Avvia in dev mode
 CMD ["yarn", "start"]
