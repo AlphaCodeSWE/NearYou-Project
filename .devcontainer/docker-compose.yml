@@ -368,6 +368,28 @@ services:
     depends_on:
       - clickhouse
     restart: unless-stopped
+  
+  admin-auth:
+    build:
+      context: ./dashboard-admin/backend/auth
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8000"          
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - JWT_EXPIRATION_S=${JWT_EXPIRATION_S}
+    depends_on:
+      - kafka
+      - clickhouse-server
+      - postgres-postgis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+ 
 
 
 

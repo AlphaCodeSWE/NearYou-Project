@@ -14,8 +14,6 @@ langchain-community
 aiofiles
 aiokafka
 asyncpg
-
-
 # per OSRM-based routing nel producer
 polyline
 
@@ -28,3 +26,6 @@ haversine
 python-jose[cryptography]      # per JWT
 passlib[bcrypt]               # per hashing password 
 python-multipart
+
+PyJWT
+pydantic
