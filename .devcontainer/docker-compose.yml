@@ -380,6 +380,29 @@ services:
       - .env   
     restart: unless-stopped
 
+  admin-realtime:
+    build:
+      context: ./dashboard-admin/backend/realtime
+      dockerfile: Dockerfile
+    command: uvicorn ws:app --host 0.0.0.0 --port 8002
+    ports:
+      - "8002:8002"
+    environment:
+      - KAFKA_BROKER=${KAFKA_BROKER}
+      - KAFKA_TOPIC=${KAFKA_TOPIC}
+      - CONSUMER_GROUP=${CONSUMER_GROUP}
+      - SSL_CAFILE=${SSL_CAFILE}
+      - SSL_CERTFILE=${SSL_CERTFILE}
+      - SSL_KEYFILE=${SSL_KEYFILE}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+    depends_on:
+      - admin-auth
+      - kafka
+    env_file:
+      - .env
+    restart: unless-stopped
+
  
 
 
