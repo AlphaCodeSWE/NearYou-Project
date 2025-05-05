@@ -372,14 +372,12 @@ services:
   # —————————————— DASHBOARD “ADMIN” ——————————————
   admin-auth:
     build:
-      
-      context: ..
+      context: ..                                  
       dockerfile: dashboard-admin/backend/auth/Dockerfile
-    command: uvicorn app:app --host 0.0.0.0 --port 8002
     ports:
       - "8002:8002"
     env_file:
-      - .env    
+      - .env   
     restart: unless-stopped
 
  
