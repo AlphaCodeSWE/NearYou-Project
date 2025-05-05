@@ -1,0 +1,5 @@
+fastapi
+uvicorn[standard]
+clickhouse-driver
+asyncpg
+python-dotenv
