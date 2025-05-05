@@ -1,7 +1,7 @@
 fastapi
-bcrypt
 uvicorn[standard]
 python-jose[cryptography]
 python-dotenv
 python-multipart
-passlib[bcrypt]
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1
