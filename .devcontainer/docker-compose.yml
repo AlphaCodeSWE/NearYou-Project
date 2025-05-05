@@ -423,14 +423,16 @@ services:
       context: ../dashboard-admin/frontend
       dockerfile: Dockerfile
     ports:
-      - "3001:3000"
-    env_file:
-      - .env                
+      - "3001:3000"           
+    environment:
+      - CI=true
+    volumes:
+      - ../dashboard-admin/frontend:/app:cached
     depends_on:
       - admin-auth
       - admin-realtime
       - admin-analytics
-    restart: unless-stopped
+
 
 
 
