@@ -1,15 +1,12 @@
-// dashboard-admin/frontend/tsconfig.json
 {
   "compilerOptions": {
-    "target": "ES6",
+    "target": "ES5",
     "lib": ["DOM", "ESNext"],
-    "jsx": "react-jsx",                    
+    "jsx": "react-jsx",
+    "strict": true,
     "moduleResolution": "node",
-    "resolveJsonModule": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,                  
-    "forceConsistentCasingInFileNames": true,
-    "strict": true
+    "skipLibCheck": true
   },
   "include": ["src"]
 }
