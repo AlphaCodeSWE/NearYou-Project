@@ -372,7 +372,7 @@ services:
       PYTHONPATH: "/app/pythonpath"
     volumes:
       - ../appsota/definitions:/app/definitions:ro
-      - ../appsota/import.sh:/app/import.sh:ro
+      - ../appsota/import.sh:/app/import.sh
       - ../appsota/superset_config.py:/app/pythonpath/superset_config.py:ro
     entrypoint:
       - /bin/sh
