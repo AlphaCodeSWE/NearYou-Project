@@ -368,6 +368,8 @@ services:
     environment:
       MB_DB_TYPE: h2
       MB_JETTY_PORT: 3000
+      MB_ADMIN_EMAIL: "admin@admin.com"
+      MB_ADMIN_PASSWORD: "admin"
     ports:
       - "3000:3000"
     volumes:
