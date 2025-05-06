@@ -106,25 +106,19 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
-    environment:
-      - GF_INSTALL_PLUGINS=vertamedia-clickhouse-datasource
-    depends_on:
-      - clickhouse
-      - postgres
     ports:
       - "3000:3000"
     volumes:
-      
-      - grafana_data:/var/lib/grafana
-
-      
-      - ../grafana/provisioning:/etc/grafana/provisioning:ro
-      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 15s
-      timeout: 10s
-      retries: 3
+      - ../grafana/provisioning:/etc/grafana/provisioning
+      - ../grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      GF_SECURITY_ADMIN_USER: "admin"
+      GF_SECURITY_ADMIN_PASSWORD: "admin"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    depends_on:
+      - postgres-postgis
+      - clickhouse-server
 
 
   clickhouse:
