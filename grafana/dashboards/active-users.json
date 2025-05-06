@@ -2,7 +2,7 @@
   "id": null,
   "title": "Admin Overview – Active Users & Shops",
   "schemaVersion": 36,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "templating": {
     "list": [
@@ -31,7 +31,7 @@
       ],
       "options": {
         "mapCenter": { "lat": 0, "lon": 0, "zoom": 1 },
-        "tooltipFields": ["user_id","full_name","country","city"],
+        "tooltipFields": ["user_id", "full_name", "country", "city"],
         "lonField": "__lon__",
         "latField": "__lat__"
       }
@@ -51,7 +51,7 @@
       ],
       "options": {
         "mapCenter": { "lat": 0, "lon": 0, "zoom": 1 },
-        "tooltipFields": ["shop_id","shop_name","category"],
+        "tooltipFields": ["shop_id", "shop_name", "category"],
         "lonField": "__lon__",
         "latField": "__lat__"
       }
@@ -59,7 +59,7 @@
     {
       "id": 3,
       "type": "table",
-      "title": "User Counts by Country",
+      "title": "Active Users by Country",
       "gridPos": { "x": 0, "y": 8, "w": 12, "h": 6 },
       "datasource": { "uid": "ClickHouse" },
       "targets": [
@@ -72,7 +72,7 @@
     },
     {
       "id": 4,
-      "type": "bar-chart",
+      "type": "barchart",
       "title": "Shops by Category",
       "gridPos": { "x": 12, "y": 8, "w": 12, "h": 6 },
       "datasource": { "uid": "Postgres" },
