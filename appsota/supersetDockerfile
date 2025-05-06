@@ -1,13 +1,12 @@
+# appsota/supersetDockerfile
+
 FROM apache/superset:latest
 
-# divento root
-USER root
-
-# copio e chmod
+# Copia lo script e rendilo eseguibile
 COPY import.sh /app/import.sh
-RUN chmod 755 /app/import.sh
+RUN chmod +x /app/import.sh
 
-# torno allo user di default (superset)
-USER superset
+# Espongo la porta
+EXPOSE 8088
 
-
+# ENTRYPOINT lasciamo vuoto, sarà settato via docker-compose

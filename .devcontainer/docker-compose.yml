@@ -372,14 +372,9 @@ services:
       PYTHONPATH: "/app/pythonpath"
     volumes:
       - ../appsota/definitions:/app/definitions:ro
-      - ../appsota/import.sh:/app/import.sh
       - ../appsota/superset_config.py:/app/pythonpath/superset_config.py:ro
     entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        /app/import.sh
-
+       - /app/import.sh
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
       interval: 10s
