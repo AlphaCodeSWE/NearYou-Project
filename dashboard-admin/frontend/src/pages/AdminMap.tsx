@@ -1,7 +1,6 @@
-// dashboard-admin/frontend/src/pages/AdminMap.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { connectWS } from '../services/ws';
 import Map, { Point } from '../components/Map';
+import { connectWS } from '../services/ws';
 import { logout } from '../auth';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,7 +12,11 @@ export default function AdminMap() {
 
   useEffect(() => {
     wsRef.current = connectWS(msg => {
-      setPts(old => [...old, msg].filter(p => p.age >= minAge));
+      setPts(old => {
+        const all = [...old, msg];
+        // filtro su properties.age
+        return all.filter(p => (p.properties.age ?? 0) >= minAge);
+      });
     });
     return () => wsRef.current?.close();
   }, [minAge]);

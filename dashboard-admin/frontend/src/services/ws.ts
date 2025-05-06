@@ -1,25 +1,17 @@
-// dashboard-admin/frontend/src/services/ws.ts
-type Message = {
-    user_id: number;
-    latitude: number;
-    longitude: number;
-    timestamp: string;
-    age: number;
-    profession: string;
-    interests: string;
+import { getToken } from '../auth';
+import type { Point } from '../components/Map';
+
+export function connectWS(onMessage: (pt: Point) => void): WebSocket {
+  const token = getToken();
+  // passiamo il token come subprotocollo per aggirare il divieto di header custom
+  const ws = new WebSocket(
+    `${process.env.REACT_APP_WS_URL}/ws`,
+    token ? [`Bearer ${token}`] : []
+  );
+  ws.onmessage = ev => {
+    const data = JSON.parse(ev.data) as Point;
+    onMessage(data);
   };
-  
-  export function connectWS(
-    onMessage: (msg: Message) => void
-  ): WebSocket {
-    const url = process.env.REACT_APP_WS_URL!;
-    const ws = new WebSocket(url);
-    ws.onmessage = e => {
-      try {
-        const msg: Message = JSON.parse(e.data);
-        onMessage(msg);
-      } catch {}
-    };
-    return ws;
-  }
-  
+  ws.onerror = err => console.error('WS error', err);
+  return ws;
+}
