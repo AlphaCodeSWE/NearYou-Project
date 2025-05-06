@@ -5,7 +5,7 @@ USER root
 
 # copio e chmod
 COPY import.sh /app/import.sh
-RUN chmod +x /app/import.sh
+RUN chmod 755 /app/import.sh
 
 # torno allo user di default (superset)
 USER superset
