@@ -1,5 +1,0 @@
-fastapi
-uvicorn[standard]
-aiokafka
-python-dotenv
-PyJWT

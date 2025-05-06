@@ -1,8 +1,0 @@
-# dashboard-admin/backend/analytics/main.py
-from fastapi import FastAPI
-from router import router as analytics_router
-
-app = FastAPI(title="Admin Analytics API")
-
-# montiamo il router senza prefisso 
-app.include_router(analytics_router)
