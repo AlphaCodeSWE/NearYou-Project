@@ -6,16 +6,19 @@ datasources:
     type: vertamedia-clickhouse-datasource
     access: proxy
     url: http://clickhouse:8123
-    database: nearyou
-    user: default
-    secureJsonData:
-      password:
     isDefault: true
+    jsonData:
+      defaultDatabase: nearyou
+    secureJsonData:
+      password: pwe@123@l@
 
   - name: Postgres
     uid: Postgres
     type: postgres
     access: proxy
-    url: postgres://nearuser:nearypass@postgres-postgis:5432/near_you_shops
+    url: postgres-postgis:5432
     database: near_you_shops
+    user: nearuser
+    secureJsonData:
+      password: nearypass
     isDefault: false

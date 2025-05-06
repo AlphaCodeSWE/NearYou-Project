@@ -107,19 +107,23 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      - GF_INSTALL_PLUGINS=vertamedia-clickhouse-datasource
     depends_on:
       - clickhouse
       - postgres
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ../grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-      - ../grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "3000:3000"
+    volumes:
+      # 1) i provisioning e dashboard JSON
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
+      # 2) named volume per tutti gli altri dati di Grafana
+      - grafana_data:/var/lib/grafana
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
 
 
   clickhouse:
