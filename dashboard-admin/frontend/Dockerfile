@@ -1,12 +1,23 @@
-# dashboard-admin/frontend/Dockerfile.prod
-FROM node:20-alpine3.19 AS build
+# dashboard-admin/frontend/Dockerfile
+
+FROM node:23-alpine3.19
+
 WORKDIR /app
-COPY package.json ./
-RUN npm install --omit=dev
+
+# 1) Copia solo package.json e package-lock.json per sfruttare la cache
+COPY package.json package-lock.json ./
+
+# 2) Installa le dipendenze in modo riproducibile
+RUN npm ci
+
+# 3) Copia il resto del codice
 COPY . .
+
+# 4) Costruisci la versione di produzione (in caso ne serva una)
 RUN npm run build
 
-FROM nginx:alpine
-COPY --from=build /app/build /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# 5) Espone la porta React (normalmente 3000)
+EXPOSE 3000
+
+# 6) Avvia il dev-server
+CMD ["npm", "start"]

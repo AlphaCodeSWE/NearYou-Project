@@ -420,19 +420,19 @@ services:
 
 
   admin-frontend:
-    image: node:20-alpine3.19   # usa l’ultima node:20-alpine
-    working_dir: /app
-    volumes:
-      - ../dashboard-admin/frontend:/app         # monta il tuo src
-      - admin_frontend_node_modules:/app/node_modules  # volume per node_modules
+    build:
+      context: ./dashboard-admin/frontend
+      dockerfile: Dockerfile
     ports:
-      - "3001:3000"      # esponi la porta, ad es. 3001
+      - "3001:3000"       
     environment:
-      - CI=true
-    entrypoint: ["sh", "-c"]
-    command: >
-      npm install --no-package-lock &&     # installa in /app/node_modules
-      npm start                           # poi lancia la dev-server
+      - REACT_APP_AUTH_URL=http://admin-auth:8002
+      - REACT_APP_WS_URL=ws://admin-realtime:8004
+      - REACT_APP_API_URL=http://admin-analytics:8005
+    depends_on:
+      - admin-auth
+      - admin-realtime
+      - admin-analytics
 
 
 
@@ -449,4 +449,4 @@ volumes:
   postgres_data:
   airflow_pgdata:
   airflow_data:
-  admin_frontend_node_modules:
+ 
