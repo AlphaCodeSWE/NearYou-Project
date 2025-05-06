@@ -362,27 +362,27 @@ services:
       - "8088:8088"
     depends_on:
        - clickhouse
+        
        - postgres
     environment:
       SUPERSET_ENV: production
       SUPERSET_LOAD_EXAMPLES: "no"
-      # usa sqlite per il metadata DB interno
       DATABASE_URL: "sqlite:////app/superset.db"
-      SECRET_KEY: "Op3nAIr0ck5G3n3rat3dBase64Str1ng==" 
+      SECRET_KEY: "Op3nAIr0ck5G3n3rat3dBase64Str1ng=="
     volumes:
-      - ../appsota/definitions:/app/definitions
-      - ../appsota/import.sh:/app/import.sh
+      - ../appsota/definitions:/app/definitions:ro
     entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        chmod +x /app/import.sh
-        /app/import.sh
+      - /app/import.sh
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:8088/health
       interval: 10s
       timeout: 5s
       retries: 5
+
 
 
 
