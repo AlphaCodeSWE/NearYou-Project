@@ -355,30 +355,29 @@ services:
 
 
 
-  metabase:
-    build:
-      context: ../appsota
-      dockerfile: MetabaseDockerfile   
-    image: my-metabase
-    container_name: metabase
+  superset:
+    image: apache/superset:latest
+    container_name: superset
     depends_on:
        - clickhouse
-       - postgres    
-    entrypoint: [ "/usr/local/bin/metabase-entrypoint.sh" ] 
-    environment:
-      MB_DB_TYPE: h2
-      MB_JETTY_PORT: 3000
-      MB_ADMIN_EMAIL: "admin@admin.com"
-      MB_ADMIN_PASSWORD: "admin"
+       
+       - postgres
+        
     ports:
-      - "3000:3000"
+      - "8088:8088"
     volumes:
-      - ../appsota/definitions:/appsota/definitions
+      - ../appsota/definitions:/app/definitions:ro
+      - ../appsota/import.sh:/app/import.sh:rw
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        chmod +x /app/import.sh && exec /app/import.sh
+    environment:
+      SUPERSET_HOME: /app/superset_home
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+      
 
   
 

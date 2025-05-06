@@ -1,0 +1,55 @@
+{
+    "dashboard_title": "Admin Overview",
+    "position_json": "{\"CHART-1\":{\"type\":\"CHART\",\"id\":1,\"chartId\":1,\"width\":4,\"height\":4},\"CHART-2\":{\"type\":\"CHART\",\"id\":2,\"chartId\":2,\"width\":4,\"height\":4},\"CHART-3\":{\"type\":\"CHART\",\"id\":3,\"chartId\":3,\"width\":8,\"height\":6}}",
+    "metadata": { "layout": "grid" },
+    "charts": [
+      {
+        "slice_name": "Total Registered Users",
+        "viz_type": "big_number",
+        "params": {
+          "metric": "COUNT(user_id)",
+          "datasource": "nearyou__users"
+        }
+      },
+      {
+        "slice_name": "Total User Events (Active Now)",
+        "viz_type": "big_number",
+        "params": {
+          "metric": "COUNT(event_id)",
+          "datasource": "nearyou__user_events",
+          "filters": [
+            {
+              "col": "event_time",
+              "op": ">= ",
+              "val": "now() - INTERVAL 5 MINUTE"
+            }
+          ]
+        }
+      },
+      {
+        "slice_name": "Shops by Category",
+        "viz_type": "bar",
+        "params": {
+          "groupby": ["category"],
+          "metrics": ["COUNT(shop_id)"],
+          "datasource": "near_you_shops__shops"
+        }
+      },
+      {
+        "slice_name": "Shops Map",
+        "viz_type": "deck_scatter",
+        "params": {
+          "longitude": "ST_X(geom)",
+          "latitude": "ST_Y(geom)",
+          "datasource": "near_you_shops__shops",
+          "js_onclick_select": "",
+          "viewport": {
+            "longitude": 0,
+            "latitude": 0,
+            "zoom": 2
+          }
+        }
+      }
+    ]
+  }
+  
