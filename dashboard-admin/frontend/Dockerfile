@@ -1,22 +1,20 @@
 # dashboard-admin/frontend/Dockerfile
 
-# 1) Usa Alpine + Node 20
+# 1) Base leggera con Node 20
 FROM node:20-alpine3.19
 
-# 2) Imposta la working dir
+# 2) Directory di lavoro
 WORKDIR /app
 
-# 3) Copia solo file di lock e package per sfruttare la cache di Docker
-COPY package.json package-lock.json ./
-
-# 4) Installa le dipendenze (legacy-peer-deps per evitare conflitti con react-scripts)
+# 3) Copia il package manifest e installa le dipendenze
+COPY package.json ./
 RUN npm install --legacy-peer-deps
 
-# 5) Copia tutto il sorgente
+# 4) Copia tutto il resto del sorgente
 COPY . .
 
-# 6) Espone la porta 3000 per il dev server CRA
+# 5) Espone la porta 3000 del dev-server
 EXPOSE 3000
 
-# 7) Comando di default: avvia il dev-server
+# 6) Avvia automaticamente il CRA dev-server
 CMD ["npm", "start"]
