@@ -114,11 +114,12 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # 1) i provisioning e dashboard JSON
+      
+      - grafana_data:/var/lib/grafana
+
+      
       - ../grafana/provisioning:/etc/grafana/provisioning:ro
       - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
-      # 2) named volume per tutti gli altri dati di Grafana
-      - grafana_data:/var/lib/grafana
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 15s
