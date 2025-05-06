@@ -420,18 +420,21 @@ services:
 
   admin-frontend:
     build:
-      context: ../dashboard-admin/frontend
+      context: ./dashboard-admin/frontend
       dockerfile: Dockerfile
     ports:
-      - "3001:3000"           
+      - "3001:3000"      # esposto su 3001 per non sovrascrivere Grafana
+    env_file:
+      - .env
     environment:
-      - CI=true
-    volumes:
-      - ../dashboard-admin/frontend:/app:cached
+      - REACT_APP_AUTH_URL=http://admin-auth:8002
+      - REACT_APP_WS_URL=ws://admin-realtime:8004
+      - REACT_APP_API_URL=http://admin-analytics:8005
     depends_on:
       - admin-auth
       - admin-realtime
       - admin-analytics
+
 
 
 
