@@ -9,6 +9,9 @@
     "react-leaflet": "^4.0.0",
     "leaflet": "^1.9.4",
     "axios": "^1.4.0",
+    "ajv": "6.12.6",
+    "ajv-formats": "1.5.1",
+    "ajv-keywords": "3.5.2",
     "react-scripts": "^5.0.1"
   },
   "scripts": {
