@@ -420,7 +420,7 @@ services:
 
   admin-frontend:
     build:
-      context: ./dashboard-admin/frontend
+      context: ../dashboard-admin/frontend
       dockerfile: Dockerfile
     ports:
       - "3001:3000"      # esposto su 3001 per non sovrascrivere Grafana
