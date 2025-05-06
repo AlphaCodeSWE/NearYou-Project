@@ -1,7 +1,13 @@
 FROM apache/superset:latest
 
-# Copia lo script di import dentro l’immagine
-COPY import.sh /app/import.sh
+# divento root
+USER root
 
-# Rendilo eseguibile
+# copio e chmod
+COPY import.sh /app/import.sh
 RUN chmod +x /app/import.sh
+
+# torno allo user di default (superset)
+USER superset
+
+
