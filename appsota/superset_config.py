@@ -1,1 +1,1 @@
-SECRET_KEY: "TOdtv2DU5QndrNhKajh7LbsBJTvOop6Dt7J+r46lh4q+AzJ3IWNg9h+c"
+SECRET_KEY =  "TOdtv2DU5QndrNhKajh7LbsBJTvOop6Dt7J+r46lh4q+AzJ3IWNg9h+c"
