@@ -1,20 +1,20 @@
 # dashboard-admin/frontend/Dockerfile
 
-# 1) Base leggera con Node 20
 FROM node:20-alpine3.19
 
-# 2) Directory di lavoro
 WORKDIR /app
 
-# 3) Copia il package manifest e installa le dipendenze
-COPY package.json ./
+# 1) Copia il package.json e lo script di fix
+COPY package.json fix-ajv.js ./
+
+# 2) Installa le dipendenze (e scatta il postinstall che esegue fix-ajv.js)
 RUN npm install --legacy-peer-deps
 
-# 4) Copia tutto il resto del sorgente
+# 3) Copia tutto il resto del sorgente
 COPY . .
 
-# 5) Espone la porta 3000 del dev-server
+# 4) Espone la porta del dev-server CRA
 EXPOSE 3000
 
-# 6) Avvia automaticamente il CRA dev-server
+# 5) Avvia automaticamente il dev-server
 CMD ["npm", "start"]
