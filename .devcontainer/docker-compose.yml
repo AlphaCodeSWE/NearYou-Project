@@ -356,33 +356,22 @@ services:
 
 
   metabase:
-    image: metabase/metabase:latest
+    build:
+      context: ../appsota
+      dockerfile: MetabaseDockerfile   
+    image: my-metabase
     container_name: metabase
-
-    # Aspetta che clickhouse e postgres siano healthy
     depends_on:
-      - clickhouse
-      - postgres
-    command:
-      - bash
-      - -c
-      - |
-        chmod +x /appsota/entrypoint.sh \
-        && /appsota/entrypoint.sh
-
+       - clickhouse
+       - postgres    
+    entrypoint: [ "/usr/local/bin/metabase-entrypoint.sh" ] 
     environment:
       MB_DB_TYPE: h2
       MB_JETTY_PORT: 3000
-
     ports:
       - "3000:3000"
-
     volumes:
-      # Le definizioni in sola lettura
-      - ../appsota/definitions:/appsota/definitions:ro
-      # Lo script in lettura/scrittura così chmod può funzionare
-      - ../appsota/entrypoint.sh:/appsota/entrypoint.sh
-
+      - ../appsota/definitions:/appsota/definitions
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 10s
