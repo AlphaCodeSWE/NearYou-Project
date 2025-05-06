@@ -21,5 +21,5 @@ curl -sX POST http://localhost:3000/api/dashboard \
   -H "Content-Type: application/json" \
   -d @/appsota/definitions/dashboards/admin-overview.json
 
-
+# Mantieni il processo in foreground
 wait
