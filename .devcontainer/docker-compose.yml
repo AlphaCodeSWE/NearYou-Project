@@ -353,6 +353,8 @@ services:
       - clickhouse
     restart: unless-stopped
 
+  
+
   superset:
     build:
       context: ../appsota
@@ -361,23 +363,21 @@ services:
     ports:
       - "8088:8088"
     depends_on:
-       - clickhouse
-       
-       - postgres
-       
+      - clickhouse
+        
+      - postgres
+        
     environment:
       SUPERSET_ENV: production
       SUPERSET_LOAD_EXAMPLES: "no"
       DATABASE_URL: "sqlite:////app/superset.db"
-      SECRET_KEY: "TOdtv2DU5QndrNhKajh7LbsBJTvOop6Dt7J+r46lh4q+AzJ3IWNg9h+c"
-    volumes: 
-       - ../appsota/definitions:/app/definitions
+    volumes:
+      - ../appsota/definitions:/app/definitions
+      - ../appsota/superset_config.py:/app/pythonpath/superset_config.py
+    entrypoint:
+      - /app/import.sh
     healthcheck:
-      test:
-        - CMD
-        - curl
-        - -f
-        - http://localhost:8088/health
+      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
       interval: 10s
       timeout: 5s
       retries: 5
