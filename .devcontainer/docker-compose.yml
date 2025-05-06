@@ -362,9 +362,9 @@ services:
     image: metabase/metabase:latest
     container_name: metabase
     depends_on:
-      clickhouse-server:
+      clickhouse:
         condition: service_healthy
-      postgres-postgis:
+      postgres:
         condition: service_healthy
     command:
       - bash
