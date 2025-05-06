@@ -117,8 +117,8 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_USERS_ALLOW_SIGN_UP: "false"
     depends_on:
-      - postgres-postgis
-      - clickhouse-server
+      - postgres
+      - clickhouse
 
 
   clickhouse:
