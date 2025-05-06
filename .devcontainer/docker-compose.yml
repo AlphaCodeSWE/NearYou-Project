@@ -362,18 +362,16 @@ services:
       - "8088:8088"
     depends_on:
        - clickhouse
-        
+       
        - postgres
        
     environment:
       SUPERSET_ENV: production
       SUPERSET_LOAD_EXAMPLES: "no"
       DATABASE_URL: "sqlite:////app/superset.db"
-      
       SECRET_KEY: "Op3nAIr0ck5G3n3rat3dBase64Str1ng=="
-    volumes:
-      
-      - ../appsota/definitions:/app/definitions
+    volumes: 
+       - ../appsota/definitions:/app/definitions
     healthcheck:
       test:
         - CMD
@@ -383,6 +381,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
 
 
 
