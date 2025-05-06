@@ -1,0 +1,16 @@
+{
+    "name": "Admin Overview",
+    "cards": [
+      { "card_id": 1 },
+      { "card_id": 2 },
+      { "card_id": 3 },
+      { "card_id": 4 }
+    ],
+    "layout": [
+      { "card_id": 1, "x": 0, "y": 0, "w": 3, "h": 3 },
+      { "card_id": 2, "x": 3, "y": 0, "w": 6, "h": 3 },
+      { "card_id": 3, "x": 0, "y": 3, "w": 6, "h": 6 },
+      { "card_id": 4, "x": 6, "y": 3, "w": 6, "h": 6 }
+    ]
+  }
+  

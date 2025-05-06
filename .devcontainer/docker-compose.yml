@@ -103,22 +103,7 @@ services:
       retries: 3
 
  
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - ../grafana/provisioning:/etc/grafana/provisioning
-      - ../grafana/dashboards:/var/lib/grafana/dashboards
-    environment:
-      GF_SECURITY_ADMIN_USER: "admin"
-      GF_SECURITY_ADMIN_PASSWORD: "admin"
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
-      GF_USERS_ALLOW_SIGN_UP: "false"
-    depends_on:
-      - postgres
-      - clickhouse
+ 
 
 
   clickhouse:
@@ -370,6 +355,36 @@ services:
     depends_on:
       - clickhouse
     restart: unless-stopped
+
+
+
+  metabase:
+    image: metabase/metabase:latest
+    container_name: metabase
+    depends_on:
+      clickhouse-server:
+        condition: service_healthy
+      postgres-postgis:
+        condition: service_healthy
+    command:
+      - bash
+      - -c
+      - |
+        chmod +x /appsota/entrypoint.sh \
+        && /appsota/entrypoint.sh
+    environment:
+      MB_DB_TYPE: h2
+      MB_JETTY_PORT: 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../appsota/definitions:/appsota/definitions:ro
+      - ../appsota/entrypoint.sh:/appsota/entrypoint.sh:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   
   
 
@@ -377,8 +392,9 @@ services:
 volumes:
   kafka_data:
   clickhouse_data:
-  grafana_data:
+  #grafana_data:
   postgres_data:
   airflow_pgdata:
   airflow_data:
+  metabase_data:
  

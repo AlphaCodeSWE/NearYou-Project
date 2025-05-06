@@ -1,0 +1,17 @@
+{
+    "name": "Mappa Shops",
+    "dataset_query": {
+      "database": "near_you_shops",
+      "type": "native",
+      "native": {
+        "query": "SELECT ST_Y(geom) AS lat, ST_X(geom) AS lng, shop_name AS label FROM shops"
+      }
+    },
+    "display": "point_map",
+    "visualization_settings": {
+      "latitude_field": "lat",
+      "longitude_field": "lng",
+      "tooltip_field": "label"
+    }
+  }
+  
