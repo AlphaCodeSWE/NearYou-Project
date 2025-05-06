@@ -1,5 +1,0 @@
-# appsota/MetabaseDockerfile
-FROM metabase/metabase:latest
-
-COPY metabase-entrypoint.sh /usr/local/bin/metabase-entrypoint.sh
-RUN chmod +x /usr/local/bin/metabase-entrypoint.sh

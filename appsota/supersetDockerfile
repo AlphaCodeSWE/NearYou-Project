@@ -1,0 +1,12 @@
+# appsota/Dockerfile
+FROM apache/superset:latest
+
+USER root
+
+# Copia gli script e dai permessi
+COPY import.sh /app/import.sh
+COPY import_dashboards_and_charts.sh /app/import_dashboards_and_charts.sh
+RUN chmod +x /app/import.sh /app/import_dashboards_and_charts.sh
+
+USER superset
+ENTRYPOINT ["/app/import.sh"]
