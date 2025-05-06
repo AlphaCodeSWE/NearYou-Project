@@ -355,40 +355,6 @@ services:
 
   
 
-  superset:
-    build:
-      context: ../appsota
-      dockerfile: supersetDockerfile
-    container_name: superset
-    ports:
-      - "8088:8088"
-    depends_on:
-       - clickhouse     
-       - postgres
-    environment:
-      SUPERSET_ENV: production
-      SUPERSET_LOAD_EXAMPLES: "no"
-      DATABASE_URL: "sqlite:////app/superset.db"
-      PYTHONPATH: "/app/pythonpath"
-    volumes:
-      - ../appsota/definitions:/app/definitions:ro
-      - ../appsota/superset_config.py:/app/pythonpath/superset_config.py:ro
-    entrypoint:
-       - /app/import.sh
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-
-
-
-
-
-  
-
-
 volumes:
   kafka_data:
   clickhouse_data:
