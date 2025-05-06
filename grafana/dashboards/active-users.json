@@ -1,46 +1,17 @@
 {
+  "id": null,
   "title": "Admin Overview – Active Users & Shops",
   "schemaVersion": 36,
   "version": 1,
   "refresh": "30s",
-  "time": { "from": "now-6h", "to": "now" },
   "templating": {
     "list": [
       {
-        "name": "days",
+        "name": "interval",
         "type": "interval",
-        "label": "Last interval",
-        "hide": 0,
-        "query": "1h,6h,12h,1d,7d,30d",
-        "current": { "text": "6h", "value": "6h" },
-        "options": [
-          { "text": "1h",  "value": "1h" },
-          { "text": "6h",  "value": "6h" },
-          { "text": "12h", "value": "12h" },
-          { "text": "1d",  "value": "1d" },
-          { "text": "7d",  "value": "7d" },
-          { "text": "30d", "value": "30d" }
-        ]
-      },
-      {
-        "name": "country",
-        "type": "query",
-        "label": "User Country",
-        "datasource": "ClickHouse",
-        "query": "SELECT DISTINCT country FROM nearyou.users ORDER BY country",
-        "includeAll": true,
-        "allValue": "",
-        "current": { "text": "All", "value": "$__all" }
-      },
-      {
-        "name": "shopCountry",
-        "type": "query",
-        "label": "Shop Country",
-        "datasource": "Postgres",
-        "query": "SELECT DISTINCT country FROM shops ORDER BY country",
-        "includeAll": true,
-        "allValue": "",
-        "current": { "text": "All", "value": "$__all" }
+        "label": "Time Range",
+        "query": "5m,1h,6h,12h,24h,7d",
+        "current": { "text": "1h", "value": "1h" }
       }
     ]
   },
@@ -49,51 +20,74 @@
       "id": 1,
       "type": "geomap",
       "title": "Active Users Map",
-      "datasource": "ClickHouse",
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT toFloat64(longitude) AS __lon__, toFloat64(latitude) AS __lat__, user_id, full_name, country, max(event_time) OVER (PARTITION BY user_id) AS last_event\nFROM nearyou.user_events AS e\nANY LEFT JOIN nearyou.users AS u USING user_id\nWHERE event_time >= now() - toInterval${days}()\n  {{ if not (eq .Var.country \"__all\") }}AND country = '${country}'{{ end }}"
-      }],
       "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
-      "options": { "lonField": "__lon__", "latField": "__lat__", "popupFields": ["user_id","full_name","country","last_event"] }
+      "datasource": { "uid": "ClickHouse" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT toFloat64(longitude) AS __lon__, toFloat64(latitude) AS __lat__, user_id, full_name, country, city FROM nearyou.user_events WHERE event_time >= now() - toInterval${interval}()"
+        }
+      ],
+      "options": {
+        "mapCenter": { "lat": 0, "lon": 0, "zoom": 1 },
+        "tooltipFields": ["user_id","full_name","country","city"],
+        "lonField": "__lon__",
+        "latField": "__lat__"
+      }
     },
     {
       "id": 2,
       "type": "geomap",
       "title": "Shops Map",
-      "datasource": "Postgres",
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT ST_X(geom) AS __lon__, ST_Y(geom) AS __lat__, shop_id, name, category, country\nFROM shops\nWHERE true\n  {{ if not (eq .Var.shopCountry \"__all\") }}AND country = '${shopCountry}'{{ end }}"
-      }],
       "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
-      "options": { "lonField": "__lon__", "latField": "__lat__", "popupFields": ["shop_id","name","category","country"] }
+      "datasource": { "uid": "Postgres" },
+      "targets": [
+        {
+          "refId": "B",
+          "format": "table",
+          "rawSql": "SELECT ST_X(geom) AS __lon__, ST_Y(geom) AS __lat__, shop_id, shop_name, category FROM shops"
+        }
+      ],
+      "options": {
+        "mapCenter": { "lat": 0, "lon": 0, "zoom": 1 },
+        "tooltipFields": ["shop_id","shop_name","category"],
+        "lonField": "__lon__",
+        "latField": "__lat__"
+      }
     },
     {
       "id": 3,
       "type": "table",
-      "title": "Active Users List",
-      "datasource": "ClickHouse",
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT user_id, full_name, email, country, max(event_time) AS last_event\nFROM nearyou.user_events e\nANY LEFT JOIN nearyou.users u USING user_id\nWHERE event_time >= now() - toInterval${days}()\n  {{ if not (eq .Var.country \"__all\") }}AND country = '${country}'{{ end }}\nGROUP BY user_id, full_name, email, country\nORDER BY last_event DESC\nLIMIT 200"
-      }],
-      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
+      "title": "User Counts by Country",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 6 },
+      "datasource": { "uid": "ClickHouse" },
+      "targets": [
+        {
+          "refId": "C",
+          "format": "table",
+          "rawSql": "SELECT country, count(DISTINCT user_id) AS active_users FROM nearyou.user_events WHERE event_time >= now() - toInterval${interval}() GROUP BY country ORDER BY active_users DESC"
+        }
+      ]
     },
     {
       "id": 4,
-      "type": "table",
-      "title": "Shops List",
-      "datasource": "Postgres",
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT shop_id, name, category, country, created_at\nFROM shops\nWHERE true\n  {{ if not (eq .Var.shopCountry \"__all\") }}AND country = '${shopCountry}'{{ end }}\nORDER BY created_at DESC\nLIMIT 200"
-      }],
-      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 }
+      "type": "bar-chart",
+      "title": "Shops by Category",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 6 },
+      "datasource": { "uid": "Postgres" },
+      "targets": [
+        {
+          "refId": "D",
+          "format": "table",
+          "rawSql": "SELECT category, count(*) AS shop_count FROM shops GROUP BY category ORDER BY shop_count DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
     }
   ]
 }
