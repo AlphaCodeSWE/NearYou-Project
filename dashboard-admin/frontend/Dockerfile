@@ -1,20 +1,26 @@
 # dashboard-admin/frontend/Dockerfile
 
 FROM node:20-alpine3.19
+
 WORKDIR /app
 
-# 1) Copia solo package.json + fix script
-COPY package.json fix-ajv.js ./
+# 1) Copia il manifest e (se presente) il lockfile
+COPY package.json package-lock.json* ./
 
-# 2) Rendi eseguibile e installa le dipendenze (con postinstall che crea gli stub)
-RUN chmod +x fix-ajv.js \
-    && npm install --legacy-peer-deps
+# 2) Installa le dipendenze e crea gli stub AJV
+RUN npm install --legacy-peer-deps \
+  && mkdir -p node_modules/ajv/dist/compile \
+  && printf 'module.exports=require("./codegen");\n' > node_modules/ajv/dist/compile/context.js \
+  && printf 'module.exports=function compile(){return {};}\n' > node_modules/ajv/dist/compile/codegen.js
 
-# 3) Copia il resto del sorgente
+# 3) Copia tutto il resto del frontend
 COPY . .
 
-# 4) Espone la porta del dev-server CRA
+# 4) Assicura i permessi di esecuzione (incluso eventuale fix script)
+RUN chmod -R a+rx .
+
+# 5) Espone la porta del dev‐server
 EXPOSE 3000
 
-# 5) Avvia automaticamente il dev-server
+# 6) Avvia automaticamente CRA
 CMD ["npm", "start"]
