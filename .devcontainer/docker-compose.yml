@@ -363,8 +363,7 @@ services:
     ports:
       - "8088:8088"
     depends_on:
-       - clickhouse
-        
+       - clickhouse     
        - postgres
     environment:
       SUPERSET_ENV: production
@@ -373,9 +372,14 @@ services:
       PYTHONPATH: "/app/pythonpath"
     volumes:
       - ../appsota/definitions:/app/definitions:ro
+      - ../appsota/import.sh:/app/import.sh:ro
       - ../appsota/superset_config.py:/app/pythonpath/superset_config.py:ro
     entrypoint:
-      - /app/import.sh
+      - /bin/sh
+      - -c
+      - |
+        /app/import.sh
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
       interval: 10s

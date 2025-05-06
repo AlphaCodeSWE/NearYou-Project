@@ -12,22 +12,10 @@ superset fab create-admin \
   --password admin
 superset init
 
-# 2) Crea un file temporaneo di definizione dei database (yaml) in /tmp
-cat <<EOF >/tmp/databases.yml
-databases:
-  - database_name: clickhouse_nearyou
-    sqlalchemy_uri: clickhouse://default:pwe@123@l@@clickhouse-server:8123/nearyou
-  - database_name: postgres_shops
-    sqlalchemy_uri: postgresql+psycopg2://nearuser:nearypass@postgres-postgis:5432/near_you_shops
-EOF
-
-# 3) Importa i database
-superset import-databases -p /tmp/databases.yml
-
-# 4) Importa dashboard + charts già definiti
+# 2) Importa dashboard + charts già definiti
 superset import-dashboards -p /app/definitions/admin_overview.json
 
-# 5) Avvia il server
+# 3) Avvia il server
 exec gunicorn \
   --bind 0.0.0.0:8088 \
   --workers 3 \
