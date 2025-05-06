@@ -103,9 +103,6 @@ services:
       retries: 3
 
  
- 
-
-
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: clickhouse-server
@@ -362,10 +359,8 @@ services:
     image: metabase/metabase:latest
     container_name: metabase
     depends_on:
-      clickhouse:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
+      - clickhouse      
+      - postgres       
     command:
       - bash
       - -c
