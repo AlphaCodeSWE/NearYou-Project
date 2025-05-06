@@ -363,18 +363,18 @@ services:
     ports:
       - "8088:8088"
     depends_on:
-      - clickhouse
+       - clickhouse
         
-      - postgres
-        
+       - postgres
     environment:
       SUPERSET_ENV: production
       SUPERSET_LOAD_EXAMPLES: "no"
       DATABASE_URL: "sqlite:////app/superset.db"
+     
       PYTHONPATH: "/app/pythonpath"
     volumes:
-       - ../appsota/definitions:/app/definitions
-       - ../appsota/superset_config.py:/app/pythonpath/superset_config.py:ro
+      - ../appsota/definitions:/app/definitions:ro
+      - ../appsota/superset_config.py:/app/pythonpath/superset_config.py:ro
     entrypoint:
       - /app/import.sh
     healthcheck:
@@ -382,6 +382,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
 
 
 
