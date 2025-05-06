@@ -8,10 +8,7 @@
       "schemaVersion": 36,
       "version": 1,
       "refresh": "30s",
-      "time": {
-        "from": "now-7d",
-        "to": "now"
-      },
+      "time": { "from": "now-7d", "to": "now" },
       "templating": {
         "list": [
           {
@@ -70,7 +67,7 @@
             {
               "refId": "A",
               "format": "table",
-              "rawSql": "SELECT toFloat64(longitude) AS __lon__, toFloat64(latitude) AS __lat__, user_id, full_name, age, country, max(event_time) OVER (PARTITION BY user_id) AS last_event\nFROM nearyou.user_events AS e\nANY LEFT JOIN nearyou.users AS u USING user_id\nWHERE event_time >= now() - toInterval${days}()\n  AND age >= ${minAge}\n  {{ if not (eq .Var.country \"__all\") }}AND country = '${country}'{{ end }}\n"
+              "rawSql": "SELECT toFloat64(longitude) AS __lon__, toFloat64(latitude) AS __lat__, user_id, full_name, age, country, max(event_time) OVER (PARTITION BY user_id) AS last_event FROM nearyou.user_events AS e ANY LEFT JOIN nearyou.users AS u USING user_id WHERE event_time >= now() - toInterval${days}() AND age >= ${minAge} {{ if not (eq .Var.country \"__all\") }}AND country = '${country}'{{ end }}"
             }
           ],
           "fieldConfig": { "defaults": {} },
@@ -90,13 +87,11 @@
             {
               "refId": "A",
               "format": "table",
-              "rawSql": "SELECT user_id, full_name, email, country, age, max(event_time) AS last_event\nFROM nearyou.user_events AS e\nANY LEFT JOIN nearyou.users AS u USING user_id\nWHERE event_time >= now() - toInterval${days}()\n  AND age >= ${minAge}\n  {{ if not (eq .Var.country \"__all\") }}AND country = '${country}'{{ end }}\nGROUP BY user_id, full_name, email, country, age\nORDER BY last_event DESC\nLIMIT 500\n"
+              "rawSql": "SELECT user_id, full_name, email, country, age, max(event_time) AS last_event FROM nearyou.user_events AS e ANY LEFT JOIN nearyou.users AS u USING user_id WHERE event_time >= now() - toInterval${days}() AND age >= ${minAge} {{ if not (eq .Var.country \"__all\") }}AND country = '${country}'{{ end }} GROUP BY user_id, full_name, email, country, age ORDER BY last_event DESC LIMIT 500"
             }
           ],
           "options": { "showHeader": true },
-          "fieldConfig": {
-            "defaults": { "mappings": [], "custom": {} }
-          }
+          "fieldConfig": { "defaults": { "mappings": [], "custom": {} } }
         }
       ]
     },
