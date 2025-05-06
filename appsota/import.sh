@@ -12,8 +12,8 @@ superset fab create-admin \
   --password admin
 superset init
 
-# 2) Crea un file temporaneo di definizione dei database (yaml)
-cat <<EOF >/app/databases.yml
+# 2) Crea un file temporaneo di definizione dei database (yaml) in /tmp
+cat <<EOF >/tmp/databases.yml
 databases:
   - database_name: clickhouse_nearyou
     sqlalchemy_uri: clickhouse://default:pwe@123@l@@clickhouse-server:8123/nearyou
@@ -22,7 +22,7 @@ databases:
 EOF
 
 # 3) Importa i database
-superset import-databases -p /app/databases.yml
+superset import-databases -p /tmp/databases.yml
 
 # 4) Importa dashboard + charts già definiti
 superset import-dashboards -p /app/definitions/admin_overview.json
