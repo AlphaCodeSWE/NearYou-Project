@@ -1,7 +1,10 @@
 {
     "dashboard": {
+      "id": null,
       "uid": "active-users",
       "title": "Active Users",
+      "tags": ["provisioned"],
+      "timezone": "browser",
       "schemaVersion": 36,
       "version": 1,
       "refresh": "30s",
