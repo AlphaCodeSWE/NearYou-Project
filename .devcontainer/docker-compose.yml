@@ -353,9 +353,6 @@ services:
       - clickhouse
     restart: unless-stopped
 
-
-
-  
   superset:
     build:
       context: ../appsota
@@ -365,14 +362,30 @@ services:
       - "8088:8088"
     depends_on:
        - clickhouse
-       - postgres    
+       - postgres
     environment:
       SUPERSET_ENV: production
       SUPERSET_LOAD_EXAMPLES: "no"
-      # usa H2 per il metadata DB interno
+      # usa sqlite per il metadata DB interno
       DATABASE_URL: "sqlite:////app/superset.db"
+      SECRET_KEY: "Op3nAIr0ck5G3n3rat3dBase64Str1ng==" 
     volumes:
       - ../appsota/definitions:/app/definitions
+      - ../appsota/import.sh:/app/import.sh
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        chmod +x /app/import.sh
+        /app/import.sh
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+
 
   
 
@@ -380,9 +393,7 @@ services:
 volumes:
   kafka_data:
   clickhouse_data:
-  #grafana_data:
   postgres_data:
   airflow_pgdata:
   airflow_data:
-  metabase_data:
  
