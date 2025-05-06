@@ -117,13 +117,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - grafana_data:/var/lib/grafana
-      # monta solo la sottocartella 'datasources'
-      - ../grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-      # monta solo la sottocartella 'dashboards' del provisioning
-      - ../grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
-      # monta i dashboard JSON exportati
-      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
+       - grafana_data:/var/lib/grafana
+       - ../grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+       - ../grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 15s
