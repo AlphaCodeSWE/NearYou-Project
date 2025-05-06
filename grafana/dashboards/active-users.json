@@ -1,7 +1,7 @@
 {
   "id": null,
   "uid": "active-users",
-  "title": "Active Users",
+  "title": "Active Users & Shops",
   "tags": ["provisioned"],
   "timezone": "browser",
   "schemaVersion": 36,
@@ -19,16 +19,7 @@
         "label": "Last interval",
         "hide": 0,
         "query": "1h,6h,12h,1d,7d,30d,90d",
-        "current": { "text": "7d", "value": "7d" },
-        "options": [
-          { "text": "1h", "value": "1h" },
-          { "text": "6h", "value": "6h" },
-          { "text": "12h", "value": "12h" },
-          { "text": "1d", "value": "1d" },
-          { "text": "7d", "value": "7d" },
-          { "text": "30d", "value": "30d" },
-          { "text": "90d", "value": "90d" }
-        ]
+        "current": { "text": "7d", "value": "7d" }
       },
       {
         "name": "minAge",
@@ -36,25 +27,16 @@
         "label": "Min Age",
         "hide": 0,
         "query": "0,18,25,35,50",
-        "current": { "text": "0", "value": "0" },
-        "options": [
-          { "text": "0", "value": "0" },
-          { "text": "18", "value": "18" },
-          { "text": "25", "value": "25" },
-          { "text": "35", "value": "35" },
-          { "text": "50", "value": "50" }
-        ]
+        "current": { "text": "0", "value": "0" }
       },
       {
         "name": "country",
         "type": "query",
         "label": "Country",
         "datasource": "ClickHouse",
-        "query": "SELECT DISTINCT country FROM users ORDER BY country",
+        "query": "SELECT DISTINCT country FROM nearyou.users ORDER BY country",
         "includeAll": true,
-        "allValue": "",
-        "multi": false,
-        "current": { "text": "All", "value": "$__all" }
+        "allValue": ""
       }
     ]
   },
@@ -62,40 +44,77 @@
     {
       "id": 1,
       "type": "geomap",
-      "title": "Active Users Map",
-      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
-      "datasource": "ClickHouse",
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawSql": "SELECT toFloat64(longitude) AS __lon__, toFloat64(latitude) AS __lat__, user_id, full_name, age, country, max(event_time) OVER (PARTITION BY user_id) AS last_event\nFROM nearyou.user_events AS e\nANY LEFT JOIN nearyou.users AS u USING user_id\nWHERE event_time >= now() - toInterval${days}()\n  AND age >= ${minAge}\n  {{ if not (eq .Var.country \"__all\") }}AND country = '${country}'{{ end }}\n"
-        }
-      ],
-      "fieldConfig": { "defaults": {} },
+      "title": "Users & Shops Map",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 12 },
       "options": {
         "lonField": "__lon__",
         "latField": "__lat__",
-        "popupFields": ["user_id", "full_name", "age", "country", "last_event"]
-      }
+        "popupFields": ["_type", "user_id", "full_name", "shop_name", "category", "last_event"]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": "ClickHouse",
+          "format": "table",
+          "rawSql": "\
+SELECT toFloat64(longitude) AS __lon__, toFloat64(latitude) AS __lat__, 'user' AS _type,\
+       user_id, full_name, age, country, max(event_time) OVER (PARTITION BY user_id) AS last_event\
+FROM nearyou.user_events AS e \
+ANY LEFT JOIN nearyou.users AS u USING user_id \
+WHERE event_time >= now() - toInterval${days}()\
+  AND age >= ${minAge}\
+  {{ if not (eq .Var.country \"__all\") }}AND country = '${country}'{{ end }}\
+"
+        },
+        {
+          "refId": "B",
+          "datasource": "Postgres",
+          "format": "table",
+          "rawSql": "\
+SELECT ST_X(geom) AS __lon__, ST_Y(geom) AS __lat__, 'shop' AS _type,\
+       shop_id AS user_id, shop_name AS full_name, NULL AS age, category AS country, NULL AS last_event\
+FROM shops\
+"
+        }
+      ]
     },
     {
       "id": 2,
       "type": "table",
       "title": "Active Users List",
-      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
       "datasource": "ClickHouse",
       "targets": [
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT user_id, full_name, email, country, age, max(event_time) AS last_event\nFROM nearyou.user_events AS e\nANY LEFT JOIN nearyou.users AS u USING user_id\nWHERE event_time >= now() - toInterval${days}()\n  AND age >= ${minAge}\n  {{ if not (eq .Var.country \"__all\") }}AND country = '${country}'{{ end }}\nGROUP BY user_id, full_name, email, country, age\nORDER BY last_event DESC\nLIMIT 500\n"
+          "rawSql": "\
+SELECT user_id, full_name, email, country, age, max(event_time) AS last_event\
+FROM nearyou.user_events AS e \
+ANY LEFT JOIN nearyou.users AS u USING user_id \
+WHERE event_time >= now() - toInterval${days}()\
+  AND age >= ${minAge}\
+  {{ if not (eq .Var.country \"__all\") }}AND country = '${country}'{{ end }}\
+GROUP BY user_id, full_name, email, country, age\
+ORDER BY last_event DESC\
+LIMIT 500\
+"
         }
-      ],
-      "options": { "showHeader": true },
-      "fieldConfig": {
-        "defaults": { "mappings": [], "custom": {} }
-      }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "table",
+      "title": "All Shops",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "datasource": "Postgres",
+      "targets": [
+        {
+          "refId": "B",
+          "format": "table",
+          "rawSql": "SELECT shop_id, shop_name, address, category FROM shops ORDER BY shop_name LIMIT 500"
+        }
+      ]
     }
   ]
 }
