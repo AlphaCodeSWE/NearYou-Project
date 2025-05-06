@@ -108,18 +108,22 @@ services:
     container_name: grafana
     environment:
       - GF_INSTALL_PLUGINS=vertamedia-clickhouse-datasource
-      - GF_AUTH_ANONYMOUS_ENABLED=false       # disabilita accesso anonimo
-      - GF_SECURITY_ADMIN_USER=admin          # user di default
-      - GF_SECURITY_ADMIN_PASSWORD=admin      # password di default
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123@
     depends_on:
       - clickhouse
-      - postgres
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ../grafana/provisioning:/etc/grafana/provisioning:ro
-      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - postgres-postgis
     ports:
       - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      # monta solo la sottocartella 'datasources'
+      - ../grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      # monta solo la sottocartella 'dashboards' del provisioning
+      - ../grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      # monta i dashboard JSON exportati
+      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 15s
