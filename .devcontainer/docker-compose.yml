@@ -102,15 +102,22 @@ services:
       timeout: 10s
       retries: 3
 
+ 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     environment:
       - GF_INSTALL_PLUGINS=vertamedia-clickhouse-datasource
+      - GF_AUTH_ANONYMOUS_ENABLED=false       # disabilita accesso anonimo
+      - GF_SECURITY_ADMIN_USER=admin          # user di default
+      - GF_SECURITY_ADMIN_PASSWORD=admin      # password di default
     depends_on:
       - clickhouse
+      - postgres
     volumes:
       - grafana_data:/var/lib/grafana
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "3000:3000"
     healthcheck:
@@ -118,6 +125,7 @@ services:
       interval: 15s
       timeout: 10s
       retries: 3
+
 
   clickhouse:
     image: clickhouse/clickhouse-server:latest
