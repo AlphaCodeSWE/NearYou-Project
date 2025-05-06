@@ -371,6 +371,7 @@ services:
       SUPERSET_ENV: production
       SUPERSET_LOAD_EXAMPLES: "no"
       DATABASE_URL: "sqlite:////app/superset.db"
+      PYTHONPATH: "/app/pythonpath"
     volumes:
        - ../appsota/definitions:/app/definitions
        - ../appsota/superset_config.py:/app/pythonpath/superset_config.py
