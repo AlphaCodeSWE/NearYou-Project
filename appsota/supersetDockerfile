@@ -1,14 +1,7 @@
 FROM apache/superset:latest
 
-# Passa a root per copiare e chmod
-USER root
+# Copia lo script di import dentro l’immagine
+COPY import.sh /app/import.sh
 
-# Copia lo script in /tmp e rendilo eseguibile
-COPY import.sh /tmp/import.sh
-RUN chmod +x /tmp/import.sh
-
-# Torna all'utente superset
-USER superset
-
-# All'avvio esegui direttamente /tmp/import.sh
-ENTRYPOINT [ "/tmp/import.sh" ]
+# Rendilo eseguibile
+RUN chmod +x /app/import.sh
