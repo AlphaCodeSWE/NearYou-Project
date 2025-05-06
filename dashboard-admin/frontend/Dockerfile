@@ -1,20 +1,19 @@
-# Usa una LTS moderna senza vulnerabilità critiche
+# dashboard-admin/frontend/Dockerfile
 FROM node:20-alpine3.19
 
 WORKDIR /app
 
-# 1) Copia solo package.json per installare dipendenze
+# 1) Copia solo il package.json 
 COPY package.json ./
 
-# 2) Installa con npm 
-RUN npm install
+# 2) Installa dipendenze 
+RUN npm install --legacy-peer-deps
 
-# 3) Copia tutto il resto del sorgente
+# 3) Copia il resto del sorgente
 COPY . .
 
-# 4) Build dell’app React
+# 4) Costruisci la versione di produzione
 RUN npm run build
 
-# 5) Avvio in dev
-ENV CI=true
-CMD ["npm", "start"]
+# 5) Al container in produzione basta servire la build:
+CMD ["npx", "serve", "-s", "build", "-l", "3000"]
