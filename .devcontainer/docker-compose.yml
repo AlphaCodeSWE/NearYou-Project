@@ -366,8 +366,8 @@ services:
     ports:
       - "8088:8088"
     volumes:
-      - ../appsota/definitions:/app/definitions:ro
-      - ../appsota/import.sh:/app/import.sh:rw
+      - ../appsota/definitions:/app/definitions
+      - ../appsota/import.sh:/app/import.sh
     entrypoint:
       - /bin/sh
       - -c
