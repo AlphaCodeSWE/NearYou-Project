@@ -110,22 +110,22 @@ services:
       - GF_INSTALL_PLUGINS=vertamedia-clickhouse-datasource
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin123@
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:
       - clickhouse
       - postgres
     ports:
       - "3000:3000"
     volumes:
-       - grafana_data:/var/lib/grafana
-       - ../grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-       - ../grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - grafana_data:/var/lib/grafana
+      - ../grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ../grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 15s
       timeout: 10s
       retries: 3
-
 
   clickhouse:
     image: clickhouse/clickhouse-server:latest
