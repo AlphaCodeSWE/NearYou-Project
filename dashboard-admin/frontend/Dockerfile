@@ -1,23 +1,21 @@
-# dashboard-admin/frontend/Dockerfile
-
-FROM node:23-alpine3.19
+# usa Alpine + Node 20 (ultimo tag senza vulnerabilità critiche)
+FROM node:20-alpine3.19
 
 WORKDIR /app
 
-# 1) Copia solo package.json e package-lock.json per sfruttare la cache
-COPY package.json package-lock.json ./
+# 1) copia package.json e installa subito le dipendenze
+COPY package.json ./
+# bypass peer-deps inconciliabili con react-scripts@5
+RUN npm install --legacy-peer-deps
 
-# 2) Installa le dipendenze in modo riproducibile
-RUN npm ci
-
-# 3) Copia il resto del codice
+# 2) copia tutto il sorgente
 COPY . .
 
-# 4) Costruisci la versione di produzione (in caso ne serva una)
+# 3) build della versione di produzione
 RUN npm run build
 
-# 5) Espone la porta React (normalmente 3000)
+# 4) espone la porta del dev-server
 EXPOSE 3000
 
-# 6) Avvia il dev-server
+# 5) di default lancia il server React in dev-mode
 CMD ["npm", "start"]

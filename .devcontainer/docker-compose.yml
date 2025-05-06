@@ -421,10 +421,10 @@ services:
 
   admin-frontend:
     build:
-      context: ../dashboard-admin/frontend
+      context: ./dashboard-admin/frontend
       dockerfile: Dockerfile
     ports:
-      - "3001:3000"       
+      - "3001:3000"         
     environment:
       - REACT_APP_AUTH_URL=http://admin-auth:8002
       - REACT_APP_WS_URL=ws://admin-realtime:8004
@@ -433,6 +433,7 @@ services:
       - admin-auth
       - admin-realtime
       - admin-analytics
+
 
 
 
