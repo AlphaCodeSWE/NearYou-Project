@@ -9,6 +9,7 @@ datasources:
     isDefault: true
     jsonData:
       defaultDatabase: nearyou
+      tlsSkipVerify: true     # disabilita la verifica TLS
     secureJsonData:
       password: pwe@123@l@
 
@@ -19,6 +20,8 @@ datasources:
     url: postgres-postgis:5432
     database: near_you_shops
     user: nearuser
+    jsonData:
+      sslmode: disable       # disabilita SSL
     secureJsonData:
       password: nearypass
     isDefault: false
