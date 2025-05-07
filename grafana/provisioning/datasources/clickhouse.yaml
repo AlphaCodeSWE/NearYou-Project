@@ -8,7 +8,10 @@ datasources:
     jsonData:
       defaultDatabase: nearyou
       username: default
+      port: 8123
+      server: clickhouse-server
+      tlsSkipVerify: true
     secureJsonData:
       password: pwe@123@l@
-    editable: true
+    editable: false
     isDefault: true
