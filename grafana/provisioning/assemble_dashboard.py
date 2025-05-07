@@ -3,16 +3,13 @@ import json
 import os
 import subprocess
 
-def read_json_file(file_path):
-    """Legge un file JSON e ritorna il suo contenuto."""
-    with open(file_path, 'r') as f:
-        return json.load(f)
-
-# Crea una dashboard completa invece di usare sostituzioni
-def create_dashboard():
+def main():
     # Directory di lavoro
-    base_dir = "/workspace/NearYou-Project"
-    panels_dir = os.path.join(base_dir, "grafana/provisioning/dashboards/panels")
+    base_dir = os.getcwd()
+    panels_dir = os.path.join(base_dir, "provisioning/dashboards/panels")
+    output_file = os.path.join(base_dir, "provisioning/dashboards/nearyou_dashboard.json")
+    
+    print(f"=== Creazione dashboard NearYou con pannelli statistici ===")
     
     # Crea la struttura base della dashboard
     dashboard = {
@@ -46,104 +43,57 @@ def create_dashboard():
             "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
         },
         "timezone": "",
-        "title": "NearYou - Analisi Utenti e Negozi",
-        "uid": "nearyou-dashboard",
+        "title": "NearYou - Statistiche Base",
+        "uid": "nearyou-stats",
         "version": 1,
         "weekStart": ""
     }
     
-    # Carica ciascun pannello e aggiungilo alla dashboard
-    panel_files = [
-        "stat_users.json",
-        "stat_event.json",
-        "stat_shops.json",
-        "chart_events_per_hour.json",
-        "top_10_shops.json",
-        "map_user_routes.json",
-        "map_shops.json"
+    # Definizione solo dei pannelli statistici
+    panel_definitions = [
+        {"file": "stat_users.json", "id": 1, "pos": {"h": 4, "w": 8, "x": 0, "y": 0}},
+        {"file": "stat_event.json", "id": 2, "pos": {"h": 4, "w": 8, "x": 8, "y": 0}},
+        {"file": "stat_shops.json", "id": 3, "pos": {"h": 4, "w": 8, "x": 16, "y": 0}}
     ]
     
-    for filename in panel_files:
+    # Carica ciascun pannello definito
+    for panel_def in panel_definitions:
         try:
-            file_path = os.path.join(panels_dir, filename)
-            panel = read_json_file(file_path)
+            file_path = os.path.join(panels_dir, panel_def["file"])
+            with open(file_path, 'r') as f:
+                panel = json.load(f)
+            
+            # Imposta ID e posizione nel grid
+            panel["id"] = panel_def["id"]
+            panel["gridPos"] = panel_def["pos"]
+            
+            # Aggiungi il pannello alla dashboard
             dashboard["panels"].append(panel)
-            print(f"Aggiunto pannello da {filename}")
+            print(f"Aggiunto pannello {panel_def['file']} con ID {panel_def['id']}")
         except Exception as e:
-            print(f"Errore nel caricamento del pannello {filename}: {e}")
+            print(f"Errore nel caricamento del pannello {panel_def['file']}: {e}")
     
-    # Carica le variabili di template
-    template_files = [
-        "template_age.json",
-        "template_profession.json",
-        "template_interests.json",
-        "template_filters.json",
-        "template_datasources.json"
-    ]
-    
-    for filename in template_files:
-        try:
-            file_path = os.path.join(panels_dir, filename)
-            if filename == "template_filters.json" or filename == "template_datasources.json":
-                # Questi file contengono array di oggetti
-                vars_array = read_json_file(file_path)
-                for var in vars_array:
-                    dashboard["templating"]["list"].append(var)
-            else:
-                # Questi file contengono un singolo oggetto
-                var = read_json_file(file_path)
-                dashboard["templating"]["list"].append(var)
-            print(f"Aggiunte variabili da {filename}")
-        except Exception as e:
-            print(f"Errore nel caricamento delle variabili da {filename}: {e}")
-    
-    # Salva la dashboard completa
-    dashboard_path = os.path.join(base_dir, "nearyou_dashboard.json")
-    with open(dashboard_path, 'w') as f:
+    # Salva la dashboard
+    with open(output_file, 'w') as f:
         json.dump(dashboard, f, indent=2)
-    print(f"Dashboard completa salvata in {dashboard_path}")
+    print(f"Dashboard salvata in {output_file}")
     
-    # Crea la directory per le dashboard in Grafana
-    subprocess.run(["mkdir", "-p", "/tmp/nearyou"])
+    # Copia nel container Grafana
+    try:
+        subprocess.run(["docker", "cp", output_file, "grafana:/etc/grafana/provisioning/dashboards/"])
+        print("Dashboard copiata nel container Grafana")
+    except Exception as e:
+        print(f"Errore nella copia della dashboard nel container: {e}")
     
-    # Copia il file dashboard.json nella directory temporanea
-    with open("/tmp/nearyou/nearyou_dashboard.json", 'w') as f:
-        json.dump(dashboard, f, indent=2)
+    # Riavvia Grafana
+    try:
+        subprocess.run(["docker", "restart", "grafana"])
+        print("Grafana riavviato")
+    except Exception as e:
+        print(f"Errore nel riavvio di Grafana: {e}")
     
-    # Crea file di configurazione per la nuova posizione
-    config_content = """apiVersion: 1
-
-providers:
-  - name: 'NearYou'
-    orgId: 1
-    folder: ''
-    type: file
-    disableDeletion: false
-    editable: true
-    options:
-      path: /etc/grafana/provisioning/dashboards
-      foldersFromFilesStructure: false
-"""
-    
-    with open("/tmp/dashboard.yaml", 'w') as f:
-        f.write(config_content)
-    
-    # Esegui i comandi in sequenza per evitare errori
-    cmds = [
-        # Copia la dashboard nel container
-        ["docker", "cp", "/tmp/nearyou/nearyou_dashboard.json", "grafana:/etc/grafana/provisioning/dashboards/"],
-        # Sostituisci il file di configurazione
-        ["docker", "cp", "/tmp/dashboard.yaml", "grafana:/etc/grafana/provisioning/dashboards/dashboard.yaml"],
-        # Riavvia Grafana
-        ["docker", "restart", "grafana"]
-    ]
-    
-    for cmd in cmds:
-        try:
-            subprocess.run(cmd, check=True)
-            print(f"Comando eseguito con successo: {' '.join(cmd)}")
-        except subprocess.CalledProcessError as e:
-            print(f"Errore nell'esecuzione del comando {' '.join(cmd)}: {e}")
+    print("\nDashboard con statistiche di base creata!")
+    print("Accedi a Grafana all'indirizzo http://localhost:3000 con le credenziali admin/admin")
 
 if __name__ == "__main__":
-    create_dashboard()
+    main()
