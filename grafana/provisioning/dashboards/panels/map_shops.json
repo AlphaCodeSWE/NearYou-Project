@@ -20,7 +20,7 @@
         "mode": "absolute",
         "steps": [
           {
-            "color": "orange",
+            "color": "red",
             "value": null
           }
         ]
@@ -28,6 +28,13 @@
     },
     "overrides": []
   },
+  "gridPos": {
+    "h": 13,
+    "w": 24,
+    "x": 0,
+    "y": 25
+  },
+  "id": 5,
   "options": {
     "basemap": {
       "config": {},
@@ -39,7 +46,7 @@
       "showAttribution": true,
       "showDebug": false,
       "showMeasure": false,
-      "showScale": false,
+      "showScale": true,
       "showZoom": true
     },
     "layers": [
@@ -48,10 +55,9 @@
           "showLegend": true,
           "style": {
             "color": {
-              "field": "category",
-              "fixed": "dark-orange"
+              "fixed": "dark-red"
             },
-            "opacity": 0.8,
+            "opacity": 1,
             "rotation": {
               "fixed": 0,
               "max": 360,
@@ -59,12 +65,12 @@
               "mode": "mod"
             },
             "size": {
-              "fixed": 10,
-              "max": 15,
-              "min": 2
+              "fixed": 15,
+              "max": 20,
+              "min": 5
             },
             "symbol": {
-              "fixed": "img/icons/marker/square.svg",
+              "fixed": "img/icons/marker/circle.svg",
               "mode": "fixed"
             },
             "text": {
@@ -105,6 +111,7 @@
       "zoom": 12
     }
   },
+  "pluginVersion": "10.0.3",
   "targets": [
     {
       "datasource": {
@@ -114,8 +121,25 @@
       "editorMode": "code",
       "format": "table",
       "rawQuery": true,
-      "rawSql": "SELECT \n    shop_id, \n    shop_name, \n    address, \n    category,\n    ST_Y(geom) as lat, \n    ST_X(geom) as lon \nFROM shops",
-      "refId": "A"
+      "rawSql": "SELECT \n    shop_id, \n    shop_name, \n    address, \n    category,\n    ST_Y(geom) as lat, \n    ST_X(geom) as lon \nFROM shops\nLIMIT 1000",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
     }
   ],
   "title": "Mappa dei Negozi",
