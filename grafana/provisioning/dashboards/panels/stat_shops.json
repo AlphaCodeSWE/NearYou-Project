@@ -1,78 +1,53 @@
 {
-    "datasource": {
-      "type": "postgres",
-      "uid": "${DS_POSTGRESQL}"
-    },
-    "fieldConfig": {
-      "defaults": {
-        "color": {
-          "mode": "thresholds"
-        },
-        "mappings": [],
-        "thresholds": {
-          "mode": "absolute",
-          "steps": [
-            {
-              "color": "green",
-              "value": null
-            }
-          ]
-        }
+  "datasource": {
+    "type": "postgres",
+    "uid": "PostgreSQL"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
       },
-      "overrides": []
-    },
-    "gridPos": {
-      "h": 4,
-      "w": 4,
-      "x": 8,
-      "y": 0
-    },
-    "id": 3,
-    "options": {
-      "colorMode": "value",
-      "graphMode": "area",
-      "justifyMode": "auto",
-      "orientation": "auto",
-      "reduceOptions": {
-        "calcs": [
-          "lastNotNull"
-        ],
-        "fields": "",
-        "values": false
-      },
-      "textMode": "auto"
-    },
-    "pluginVersion": "10.0.3",
-    "targets": [
-      {
-        "datasource": {
-          "type": "postgres",
-          "uid": "${DS_POSTGRESQL}"
-        },
-        "editorMode": "code",
-        "format": "table",
-        "rawQuery": true,
-        "rawSql": "SELECT COUNT(*) FROM shops",
-        "refId": "A",
-        "sql": {
-          "columns": [
-            {
-              "parameters": [],
-              "type": "function"
-            }
-          ],
-          "groupBy": [
-            {
-              "property": {
-                "type": "string"
-              },
-              "type": "groupBy"
-            }
-          ],
-          "limit": 50
-        }
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          }
+        ]
       }
-    ],
-    "title": "Negozi Totali",
-    "type": "stat"
-  }
+    },
+    "overrides": []
+  },
+  "options": {
+    "colorMode": "value",
+    "graphMode": "area",
+    "justifyMode": "auto",
+    "orientation": "auto",
+    "reduceOptions": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+    },
+    "textMode": "auto"
+  },
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT COUNT(*) FROM shops",
+      "refId": "A"
+    }
+  ],
+  "title": "Negozi Totali",
+  "type": "stat"
+}

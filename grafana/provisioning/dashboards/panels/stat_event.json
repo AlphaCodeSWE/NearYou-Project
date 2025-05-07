@@ -1,67 +1,52 @@
 {
-    "datasource": {
-      "type": "grafana-clickhouse-datasource",
-      "uid": "${DS_CLICKHOUSE}"
-    },
-    "fieldConfig": {
-      "defaults": {
-        "color": {
-          "mode": "thresholds"
-        },
-        "mappings": [],
-        "thresholds": {
-          "mode": "absolute",
-          "steps": [
-            {
-              "color": "green",
-              "value": null
-            }
-          ]
-        }
+  "datasource": {
+    "type": "grafana-clickhouse-datasource",
+    "uid": "ClickHouse"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
       },
-      "overrides": []
-    },
-    "gridPos": {
-      "h": 4,
-      "w": 4,
-      "x": 4,
-      "y": 0
-    },
-    "id": 2,
-    "options": {
-      "colorMode": "value",
-      "graphMode": "area",
-      "justifyMode": "auto",
-      "orientation": "auto",
-      "reduceOptions": {
-        "calcs": [
-          "lastNotNull"
-        ],
-        "fields": "",
-        "values": false
-      },
-      "textMode": "auto"
-    },
-    "pluginVersion": "10.0.3",
-    "targets": [
-      {
-        "datasource": {
-          "type": "grafana-clickhouse-datasource",
-          "uid": "${DS_CLICKHOUSE}"
-        },
-        "format": 1,
-        "meta": {
-          "builderOptions": {
-            "fields": [],
-            "limit": 100,
-            "mode": "list"
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
           }
-        },
-        "queryType": "sql",
-        "rawSql": "SELECT COUNT(*) as total_events FROM nearyou.user_events WHERE event_time >= now() - INTERVAL 1 DAY",
-        "refId": "A"
+        ]
       }
-    ],
-    "title": "Eventi Oggi",
-    "type": "stat"
-  }
+    },
+    "overrides": []
+  },
+  "options": {
+    "colorMode": "value",
+    "graphMode": "area",
+    "justifyMode": "auto",
+    "orientation": "auto",
+    "reduceOptions": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+    },
+    "textMode": "auto"
+  },
+  "targets": [
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "ClickHouse"
+      },
+      "format": 1,
+      "queryType": "sql",
+      "rawSql": "SELECT COUNT(*) as total_events FROM nearyou.user_events WHERE event_time >= now() - INTERVAL 1 DAY",
+      "refId": "A"
+    }
+  ],
+  "title": "Eventi Oggi",
+  "type": "stat"
+}

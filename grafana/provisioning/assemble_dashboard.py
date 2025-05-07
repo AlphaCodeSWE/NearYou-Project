@@ -9,7 +9,7 @@ def main():
     panels_dir = os.path.join(base_dir, "provisioning/dashboards/panels")
     output_file = os.path.join(base_dir, "provisioning/dashboards/nearyou_dashboard.json")
     
-    print(f"=== Creazione dashboard NearYou con statistiche e tabella utenti ===")
+    print("=== Creazione dashboard NearYou con pannelli da file JSON ===")
     
     # Crea la struttura base della dashboard
     dashboard = {
@@ -49,75 +49,29 @@ def main():
         "weekStart": ""
     }
     
-    # Usa i pannelli statistici esistenti per eventi e negozi
-    stat_panels = [
+    # Definizione dei pannelli da caricare con le relative posizioni
+    panel_configs = [
         {"file": "stat_event.json", "id": 1, "pos": {"h": 4, "w": 12, "x": 0, "y": 0}},
-        {"file": "stat_shops.json", "id": 2, "pos": {"h": 4, "w": 12, "x": 12, "y": 0}}
+        {"file": "stat_shops.json", "id": 2, "pos": {"h": 4, "w": 12, "x": 12, "y": 0}},
+        {"file": "users_table.json", "id": 3, "pos": {"h": 15, "w": 24, "x": 0, "y": 4}}
     ]
     
-    # Carica i pannelli statistici
-    for panel_def in stat_panels:
+    # Carica i pannelli dai file JSON
+    for config in panel_configs:
         try:
-            file_path = os.path.join(panels_dir, panel_def["file"])
+            file_path = os.path.join(panels_dir, config["file"])
             with open(file_path, 'r') as f:
                 panel = json.load(f)
             
             # Imposta ID e posizione nel grid
-            panel["id"] = panel_def["id"]
-            panel["gridPos"] = panel_def["pos"]
+            panel["id"] = config["id"]
+            panel["gridPos"] = config["pos"]
             
             # Aggiungi il pannello alla dashboard
             dashboard["panels"].append(panel)
-            print(f"Aggiunto pannello {panel_def['file']} con ID {panel_def['id']}")
+            print(f"Aggiunto pannello da {config['file']} con ID {config['id']}")
         except Exception as e:
-            print(f"Errore nel caricamento del pannello {panel_def['file']}: {e}")
-    
-    # Crea un pannello tabella per gli utenti
-    users_table = {
-        "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "ClickHouse"
-        },
-        "fieldConfig": {
-            "defaults": {
-                "color": {"mode": "thresholds"},
-                "custom": {
-                    "align": "auto",
-                    "displayMode": "auto",
-                    "inspect": False
-                },
-                "mappings": [],
-                "thresholds": {
-                    "mode": "absolute",
-                    "steps": [{"color": "green", "value": None}]
-                }
-            },
-            "overrides": []
-        },
-        "gridPos": {"h": 15, "w": 24, "x": 0, "y": 4},
-        "id": 3,
-        "options": {
-            "footer": {"enablePagination": True},
-            "showHeader": True
-        },
-        "pluginVersion": "10.0.3",
-        "targets": [
-            {
-                "datasource": {
-                    "type": "grafana-clickhouse-datasource",
-                    "uid": "ClickHouse"
-                },
-                "format": 1,
-                "queryType": "sql",
-                "rawSql": "SELECT user_id, username, full_name, email, phone_number, user_type, gender, age, profession, interests, country, city, registration_time FROM nearyou.users",
-                "refId": "A"
-            }
-        ],
-        "title": "Lista Utenti Completa",
-        "type": "table"
-    }
-    dashboard["panels"].append(users_table)
-    print("Aggiunto pannello tabella utenti")
+            print(f"Errore nel caricamento del pannello {config['file']}: {e}")
     
     # Salva la dashboard
     with open(output_file, 'w') as f:
@@ -138,7 +92,7 @@ def main():
     except Exception as e:
         print(f"Errore nel riavvio di Grafana: {e}")
     
-    print("\nDashboard creata!")
+    print("\nDashboard creata con pannelli caricati da file!")
     print("Accedi a Grafana all'indirizzo http://localhost:3000 con le credenziali admin/admin")
 
 if __name__ == "__main__":
