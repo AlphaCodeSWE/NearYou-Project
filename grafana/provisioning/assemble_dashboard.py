@@ -98,27 +98,20 @@ def create_dashboard():
             print(f"Errore nel caricamento delle variabili da {filename}: {e}")
     
     # Salva la dashboard completa
-    dashboard_path = os.path.join(base_dir, "complete_dashboard.json")
+    dashboard_path = os.path.join(base_dir, "nearyou_dashboard.json")
     with open(dashboard_path, 'w') as f:
         json.dump(dashboard, f, indent=2)
     print(f"Dashboard completa salvata in {dashboard_path}")
     
-    # Crea directory per la dashboard assemblata
-    try:
-        subprocess.run(["docker", "exec", "-it", "grafana", "mkdir", "-p", "/etc/grafana/provisioning/dashboards/nearyou"])
-        print("Directory creata in Grafana")
-    except Exception as e:
-        print(f"Errore nella creazione della directory: {e}")
+    # Crea la directory per le dashboard in Grafana
+    subprocess.run(["mkdir", "-p", "/tmp/nearyou"])
     
-    # Copia nel container Grafana
-    try:
-        subprocess.run(["docker", "cp", dashboard_path, "grafana:/etc/grafana/provisioning/dashboards/nearyou/dashboard.json"])
-        print("Dashboard copiata nel container Grafana")
-    except Exception as e:
-        print(f"Errore nella copia della dashboard nel container: {e}")
+    # Copia il file dashboard.json nella directory temporanea
+    with open("/tmp/nearyou/nearyou_dashboard.json", 'w') as f:
+        json.dump(dashboard, f, indent=2)
     
-    # Aggiorna file di configurazione
-    config_yaml = """apiVersion: 1
+    # Crea file di configurazione per la nuova posizione
+    config_content = """apiVersion: 1
 
 providers:
   - name: 'NearYou'
@@ -128,25 +121,29 @@ providers:
     disableDeletion: false
     editable: true
     options:
-      path: /etc/grafana/provisioning/dashboards/nearyou
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false
 """
     
-    config_path = os.path.join(base_dir, "dashboard.yaml")
-    with open(config_path, 'w') as f:
-        f.write(config_yaml)
+    with open("/tmp/dashboard.yaml", 'w') as f:
+        f.write(config_content)
     
-    try:
-        subprocess.run(["docker", "cp", config_path, "grafana:/etc/grafana/provisioning/dashboards/dashboard.yaml"])
-        print("File di configurazione copiato nel container Grafana")
-    except Exception as e:
-        print(f"Errore nella copia del file di configurazione: {e}")
+    # Esegui i comandi in sequenza per evitare errori
+    cmds = [
+        # Copia la dashboard nel container
+        ["docker", "cp", "/tmp/nearyou/nearyou_dashboard.json", "grafana:/etc/grafana/provisioning/dashboards/"],
+        # Sostituisci il file di configurazione
+        ["docker", "cp", "/tmp/dashboard.yaml", "grafana:/etc/grafana/provisioning/dashboards/dashboard.yaml"],
+        # Riavvia Grafana
+        ["docker", "restart", "grafana"]
+    ]
     
-    # Riavvia Grafana
-    try:
-        subprocess.run(["docker", "restart", "grafana"])
-        print("Grafana riavviato")
-    except Exception as e:
-        print(f"Errore nel riavvio di Grafana: {e}")
+    for cmd in cmds:
+        try:
+            subprocess.run(cmd, check=True)
+            print(f"Comando eseguito con successo: {' '.join(cmd)}")
+        except subprocess.CalledProcessError as e:
+            print(f"Errore nell'esecuzione del comando {' '.join(cmd)}: {e}")
 
 if __name__ == "__main__":
     create_dashboard()
