@@ -9,7 +9,7 @@ def main():
     panels_dir = os.path.join(base_dir, "provisioning/dashboards/panels")
     output_file = os.path.join(base_dir, "provisioning/dashboards/nearyou_dashboard.json")
     
-    print(f"=== Creazione dashboard NearYou con pannelli statistici ===")
+    print(f"=== Creazione dashboard NearYou con statistiche e tabella utenti ===")
     
     # Crea la struttura base della dashboard
     dashboard = {
@@ -43,21 +43,20 @@ def main():
             "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
         },
         "timezone": "",
-        "title": "NearYou - Statistiche Base",
-        "uid": "nearyou-stats",
+        "title": "NearYou - Dashboard Completa",
+        "uid": "nearyou-dashboard",
         "version": 1,
         "weekStart": ""
     }
     
-    # Definizione solo dei pannelli statistici
-    panel_definitions = [
-        {"file": "stat_users.json", "id": 1, "pos": {"h": 4, "w": 8, "x": 0, "y": 0}},
-        {"file": "stat_event.json", "id": 2, "pos": {"h": 4, "w": 8, "x": 8, "y": 0}},
-        {"file": "stat_shops.json", "id": 3, "pos": {"h": 4, "w": 8, "x": 16, "y": 0}}
+    # Usa i pannelli statistici esistenti per eventi e negozi
+    stat_panels = [
+        {"file": "stat_event.json", "id": 1, "pos": {"h": 4, "w": 12, "x": 0, "y": 0}},
+        {"file": "stat_shops.json", "id": 2, "pos": {"h": 4, "w": 12, "x": 12, "y": 0}}
     ]
     
-    # Carica ciascun pannello definito
-    for panel_def in panel_definitions:
+    # Carica i pannelli statistici
+    for panel_def in stat_panels:
         try:
             file_path = os.path.join(panels_dir, panel_def["file"])
             with open(file_path, 'r') as f:
@@ -72,6 +71,53 @@ def main():
             print(f"Aggiunto pannello {panel_def['file']} con ID {panel_def['id']}")
         except Exception as e:
             print(f"Errore nel caricamento del pannello {panel_def['file']}: {e}")
+    
+    # Crea un pannello tabella per gli utenti
+    users_table = {
+        "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "ClickHouse"
+        },
+        "fieldConfig": {
+            "defaults": {
+                "color": {"mode": "thresholds"},
+                "custom": {
+                    "align": "auto",
+                    "displayMode": "auto",
+                    "inspect": False
+                },
+                "mappings": [],
+                "thresholds": {
+                    "mode": "absolute",
+                    "steps": [{"color": "green", "value": None}]
+                }
+            },
+            "overrides": []
+        },
+        "gridPos": {"h": 15, "w": 24, "x": 0, "y": 4},
+        "id": 3,
+        "options": {
+            "footer": {"enablePagination": True},
+            "showHeader": True
+        },
+        "pluginVersion": "10.0.3",
+        "targets": [
+            {
+                "datasource": {
+                    "type": "grafana-clickhouse-datasource",
+                    "uid": "ClickHouse"
+                },
+                "format": 1,
+                "queryType": "sql",
+                "rawSql": "SELECT user_id, username, full_name, email, phone_number, user_type, gender, age, profession, interests, country, city, registration_time FROM nearyou.users",
+                "refId": "A"
+            }
+        ],
+        "title": "Lista Utenti Completa",
+        "type": "table"
+    }
+    dashboard["panels"].append(users_table)
+    print("Aggiunto pannello tabella utenti")
     
     # Salva la dashboard
     with open(output_file, 'w') as f:
@@ -92,7 +138,7 @@ def main():
     except Exception as e:
         print(f"Errore nel riavvio di Grafana: {e}")
     
-    print("\nDashboard con statistiche di base creata!")
+    print("\nDashboard creata!")
     print("Accedi a Grafana all'indirizzo http://localhost:3000 con le credenziali admin/admin")
 
 if __name__ == "__main__":
