@@ -184,7 +184,7 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT user_id, username, full_name, email, phone_number, user_type, gender, age, profession, interests, country, city, registration_time FROM nearyou.users",
+          "rawSql": "SELECT user_id, username,password, full_name, email, phone_number, user_type, gender, age, profession, interests, country, city, registration_time FROM nearyou.users",
           "refId": "A"
         }
       ],
@@ -271,7 +271,7 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL 24 HOUR\nAND ('$__all' IN ('${selected_shops:raw}') OR LENGTH('${selected_shops:raw}') = 0)\nGROUP BY poi_name, time\nORDER BY time DESC, visits DESC\nLIMIT 100",
+          "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL 24 HOUR\nGROUP BY poi_name, time\nORDER BY time DESC, visits DESC\nLIMIT 100",
           "refId": "A"
         }
       ],
@@ -391,7 +391,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n    shop_id, \n    shop_name, \n    category,\n    ST_Y(geom) as lat, \n    ST_X(geom) as lon \nFROM shops\nWHERE (shop_name IN (${selected_shops:sqlquote}) OR '$__all' IN (${selected_shops:sqlquote}))\nLIMIT 100",
+          "rawSql": "SELECT \n    shop_id, \n    shop_name, \n    category,\n    ST_Y(geom) as lat, \n    ST_X(geom) as lon \nFROM shops\nLIMIT 100",
           "refId": "A"
         }
       ],
@@ -686,7 +686,7 @@
   },
   "timezone": "",
   "title": "NearYou - Dashboard Completa",
-  "uid": "nearyou-dashboard-v2",
+  "uid": "nearyou-dashboard-v3",
   "version": 1,
   "weekStart": ""
 }
