@@ -10,3 +10,5 @@ providers:
     options:
       path: /etc/grafana/provisioning/dashboards
       foldersFromFilesStructure: false
+      patterns:
+        - nearyou_dashboard.json
