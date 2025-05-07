@@ -71,7 +71,7 @@
       },
       "format": 1,
       "queryType": "sql",
-      "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL 24 HOUR\nGROUP BY poi_name, time\nORDER BY time, visits DESC\nLIMIT 100",
+      "rawSql": "SELECT\n  toString(poi_name) as shop_name,\n  toStartOfHour(event_time) as hour,\n  COUNT(*) as visit_count\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL 24 HOUR\nGROUP BY shop_name, hour\nORDER BY hour DESC, visit_count DESC\nLIMIT 50",
       "refId": "A"
     }
   ],
