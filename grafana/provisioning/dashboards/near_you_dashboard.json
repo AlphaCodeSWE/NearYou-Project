@@ -1,0 +1,63 @@
+{
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": null,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+      ${PANEL_STAT_USERS},
+      ${PANEL_STAT_EVENTS},
+      ${PANEL_STAT_SHOPS},
+      ${PANEL_CHART_EVENTS_PER_HOUR},
+      ${PANEL_TOP_10_SHOPS},
+      ${PANEL_MAP_USER_ROUTES},
+      ${PANEL_MAP_SHOPS}
+    ],
+    "refresh": "5s",
+    "schemaVersion": 38,
+    "style": "dark",
+    "tags": ["nearyou", "tracking", "shops"],
+    "templating": {
+      "list": ${TEMPLATE_VARIABLES}
+    },
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ]
+    },
+    "timezone": "",
+    "title": "NearYou - Analisi Utenti e Negozi",
+    "uid": "nearyou-dashboard",
+    "version": 1,
+    "weekStart": ""
+  }

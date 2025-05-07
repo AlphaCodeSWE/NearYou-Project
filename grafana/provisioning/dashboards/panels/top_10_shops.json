@@ -1,0 +1,71 @@
+{
+    "datasource": {
+      "type": "grafana-clickhouse-datasource",
+      "uid": "${DS_CLICKHOUSE}"
+    },
+    "fieldConfig": {
+      "defaults": {
+        "color": {
+          "mode": "thresholds"
+        },
+        "mappings": [],
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            },
+            {
+              "color": "red",
+              "value": 80
+            }
+          ]
+        }
+      },
+      "overrides": []
+    },
+    "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 12,
+      "y": 4
+    },
+    "id": 5,
+    "options": {
+      "displayMode": "gradient",
+      "minVizHeight": 10,
+      "minVizWidth": 0,
+      "orientation": "horizontal",
+      "reduceOptions": {
+        "calcs": [
+          "lastNotNull"
+        ],
+        "fields": "",
+        "values": false
+      },
+      "showUnfilled": true
+    },
+    "pluginVersion": "10.0.3",
+    "targets": [
+      {
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${DS_CLICKHOUSE}"
+        },
+        "format": 1,
+        "meta": {
+          "builderOptions": {
+            "fields": [],
+            "limit": 100,
+            "mode": "list"
+          }
+        },
+        "queryType": "sql",
+        "rawSql": "SELECT \n    poi_name,\n    COUNT(*) as visits\nFROM nearyou.user_events\nWHERE event_time >= now() - INTERVAL 24 HOUR\n    AND poi_range <= 100\n    $age_filter\n    $profession_filter\n    $interests_filter\nGROUP BY poi_name\nORDER BY visits DESC\nLIMIT 10",
+        "refId": "A"
+      }
+    ],
+    "title": "Top 10 Negozi Visitati",
+    "type": "bargauge"
+  }

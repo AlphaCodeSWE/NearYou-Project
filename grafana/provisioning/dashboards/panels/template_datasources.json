@@ -1,0 +1,42 @@
+[
+    {
+      "current": {
+        "selected": false,
+        "text": "ClickHouse",
+        "value": "ClickHouse"
+      },
+      "hide": 0,
+      "includeAll": false,
+      "name": "DS_CLICKHOUSE",
+      "options": [
+        {
+          "selected": true,
+          "text": "ClickHouse",
+          "value": "ClickHouse"
+        }
+      ],
+      "query": "ClickHouse",
+      "skipUrlSync": false,
+      "type": "constant"
+    },
+    {
+      "current": {
+        "selected": false,
+        "text": "PostgreSQL",
+        "value": "PostgreSQL"
+      },
+      "hide": 0,
+      "includeAll": false,
+      "name": "DS_POSTGRESQL",
+      "options": [
+        {
+          "selected": true,
+          "text": "PostgreSQL",
+          "value": "PostgreSQL"
+        }
+      ],
+      "query": "PostgreSQL",
+      "skipUrlSync": false,
+      "type": "constant"
+    }
+  ]

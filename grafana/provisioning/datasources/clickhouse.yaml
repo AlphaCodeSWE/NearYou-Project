@@ -1,0 +1,14 @@
+apiVersion: 1
+
+datasources:
+  - name: ClickHouse
+    type: grafana-clickhouse-datasource
+    access: proxy
+    url: http://clickhouse-server:8123
+    jsonData:
+      defaultDatabase: nearyou
+      username: default
+    secureJsonData:
+      password: pwe@123@l@
+    editable: true
+    isDefault: true

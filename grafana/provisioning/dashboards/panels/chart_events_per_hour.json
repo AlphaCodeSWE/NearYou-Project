@@ -1,0 +1,94 @@
+{
+    "datasource": {
+      "type": "grafana-clickhouse-datasource",
+      "uid": "${DS_CLICKHOUSE}"
+    },
+    "fieldConfig": {
+      "defaults": {
+        "color": {
+          "mode": "palette-classic"
+        },
+        "custom": {
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "drawStyle": "line",
+          "fillOpacity": 0,
+          "gradientMode": "none",
+          "hideFrom": {
+            "legend": false,
+            "tooltip": false,
+            "viz": false
+          },
+          "lineInterpolation": "linear",
+          "lineWidth": 1,
+          "pointSize": 5,
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "showPoints": "auto",
+          "spanNulls": false,
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "thresholdsStyle": {
+            "mode": "off"
+          }
+        },
+        "mappings": [],
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "overrides": []
+    },
+    "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 0,
+      "y": 4
+    },
+    "id": 4,
+    "options": {
+      "legend": {
+        "calcs": [],
+        "displayMode": "list",
+        "placement": "bottom",
+        "showLegend": true
+      },
+      "tooltip": {
+        "mode": "single",
+        "sort": "none"
+      }
+    },
+    "targets": [
+      {
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${DS_CLICKHOUSE}"
+        },
+        "format": 1,
+        "meta": {
+          "builderOptions": {
+            "fields": [],
+            "limit": 100,
+            "mode": "list"
+          }
+        },
+        "queryType": "sql",
+        "rawSql": "SELECT\n    toStartOfHour(event_time) as hour,\n    COUNT(*) as events\nFROM nearyou.user_events\nWHERE event_time >= now() - INTERVAL 24 HOUR\n    $age_filter\n    $profession_filter\n    $interests_filter\nGROUP BY hour\nORDER BY hour",
+        "refId": "A"
+      }
+    ],
+    "title": "Eventi per Ora",
+    "type": "timeseries"
+  }

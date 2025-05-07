@@ -1,0 +1,148 @@
+{
+    "datasource": {
+      "type": "postgres",
+      "uid": "${DS_POSTGRESQL}"
+    },
+    "fieldConfig": {
+      "defaults": {
+        "color": {
+          "mode": "thresholds"
+        },
+        "custom": {
+          "hideFrom": {
+            "legend": false,
+            "tooltip": false,
+            "viz": false
+          }
+        },
+        "mappings": [],
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "orange",
+              "value": null
+            }
+          ]
+        }
+      },
+      "overrides": []
+    },
+    "gridPos": {
+      "h": 15,
+      "w": 24,
+      "x": 0,
+      "y": 27
+    },
+    "id": 7,
+    "options": {
+      "basemap": {
+        "config": {},
+        "name": "Layer 0",
+        "type": "default"
+      },
+      "controls": {
+        "mouseWheelZoom": true,
+        "showAttribution": true,
+        "showDebug": false,
+        "showMeasure": false,
+        "showScale": false,
+        "showZoom": true
+      },
+      "layers": [
+        {
+          "config": {
+            "showLegend": true,
+            "style": {
+              "color": {
+                "field": "category",
+                "fixed": "dark-orange"
+              },
+              "opacity": 0.8,
+              "rotation": {
+                "fixed": 0,
+                "max": 360,
+                "min": -360,
+                "mode": "mod"
+              },
+              "size": {
+                "fixed": 10,
+                "max": 15,
+                "min": 2
+              },
+              "symbol": {
+                "fixed": "img/icons/marker/square.svg",
+                "mode": "fixed"
+              },
+              "text": {
+                "field": "shop_name",
+                "fixed": "",
+                "mode": "field"
+              },
+              "textConfig": {
+                "fontSize": 12,
+                "offsetX": 0,
+                "offsetY": 15,
+                "textAlign": "center",
+                "textBaseline": "middle"
+              }
+            }
+          },
+          "location": {
+            "gazetteer": {
+              "searchField": "address"
+            },
+            "latitude": "lat",
+            "longitude": "lon",
+            "mode": "coords"
+          },
+          "name": "Negozi",
+          "tooltip": true,
+          "type": "markers"
+        }
+      ],
+      "tooltip": {
+        "mode": "details"
+      },
+      "view": {
+        "allLayers": true,
+        "id": "coords",
+        "lat": 45.45,
+        "lon": 9.2,
+        "zoom": 12
+      }
+    },
+    "pluginVersion": "10.0.3",
+    "targets": [
+      {
+        "datasource": {
+          "type": "postgres",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "editorMode": "code",
+        "format": "table",
+        "rawQuery": true,
+        "rawSql": "SELECT \n    shop_id, \n    shop_name, \n    address, \n    category,\n    ST_Y(geom) as lat, \n    ST_X(geom) as lon \nFROM shops",
+        "refId": "A",
+        "sql": {
+          "columns": [
+            {
+              "parameters": [],
+              "type": "function"
+            }
+          ],
+          "groupBy": [
+            {
+              "property": {
+                "type": "string"
+              },
+              "type": "groupBy"
+            }
+          ],
+          "limit": 50
+        }
+      }
+    ],
+    "title": "Mappa dei Negozi",
+    "type": "geomap"
+  }
