@@ -6,10 +6,23 @@ import subprocess
 def main():
     # Directory di lavoro
     base_dir = os.getcwd()
-    panels_dir = os.path.join(base_dir, "provisioning/dashboards/panels")
-    output_file = os.path.join(base_dir, "provisioning/dashboards/nearyou_dashboard.json")
+    
+    # Verifica se siamo nella directory grafana o nella directory principale
+    if os.path.basename(base_dir) == "grafana":
+        panels_dir = os.path.join(base_dir, "provisioning/dashboards/panels")
+        output_file = os.path.join(base_dir, "provisioning/dashboards/nearyou_dashboard.json")
+    else:
+        # Se siamo nella directory principale del progetto
+        panels_dir = os.path.join(base_dir, "grafana/provisioning/dashboards/panels")
+        output_file = os.path.join(base_dir, "grafana/provisioning/dashboards/nearyou_dashboard.json")
     
     print("=== Creazione dashboard NearYou completa con filtri e mappe ===")
+    print(f"Directory di lavoro: {base_dir}")
+    print(f"Directory pannelli: {panels_dir}")
+    print(f"File di output: {output_file}")
+    
+    # Verifica se le directory esistono e creale se necessario
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
     
     # Crea la struttura base della dashboard
     dashboard = {
@@ -62,6 +75,11 @@ def main():
     for config in panel_configs:
         try:
             file_path = os.path.join(panels_dir, config["file"])
+            print(f"Cercando il file: {file_path}")
+            if not os.path.exists(file_path):
+                print(f"File non trovato: {file_path}")
+                continue
+                
             with open(file_path, 'r') as f:
                 panel = json.load(f)
             
@@ -87,6 +105,10 @@ def main():
     for template_file in template_files:
         try:
             file_path = os.path.join(panels_dir, template_file)
+            if not os.path.exists(file_path):
+                print(f"File template non trovato: {file_path}")
+                continue
+                
             with open(file_path, 'r') as f:
                 if template_file in ["template_filters.json", "template_datasources.json"]:
                     # Questi file contengono array di oggetti
@@ -102,9 +124,12 @@ def main():
             print(f"Errore nel caricamento dei filtri da {template_file}: {e}")
     
     # Salva la dashboard
-    with open(output_file, 'w') as f:
-        json.dump(dashboard, f, indent=2)
-    print(f"Dashboard salvata in {output_file}")
+    try:
+        with open(output_file, 'w') as f:
+            json.dump(dashboard, f, indent=2)
+        print(f"Dashboard salvata in {output_file}")
+    except Exception as e:
+        print(f"Errore nel salvataggio della dashboard: {e}")
     
     # Copia nel container Grafana
     try:
