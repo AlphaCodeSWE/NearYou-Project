@@ -379,6 +379,22 @@ services:
     restart: unless-stopped
 
 
+  init_grafana_dashboard:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    command: bash -c "/workspace/.devcontainer/scripts/init_grafana_dashboard.sh"
+    environment:
+      - PYTHONPATH=/workspace/src:/workspace
+    depends_on:
+      - grafana
+      - clickhouse
+      - postgres
+    restart: "no"
+
+
 volumes:
   kafka_data:
   clickhouse_data:
