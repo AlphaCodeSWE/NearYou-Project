@@ -75,7 +75,7 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT COUNT(*) as total_events FROM nearyou.user_events WHERE event_time >= now() - INTERVAL 1 DAY",
+          "rawSql": "SELECT COUNT(*) as total_events FROM nearyou.user_events WHERE event_time >= now() - INTERVAL ${time_range:raw}",
           "refId": "A"
         }
       ],
@@ -184,7 +184,7 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT user_id, username,password, full_name, email, phone_number, user_type, gender, age, profession, interests, country, city, registration_time FROM nearyou.users",
+          "rawSql": "SELECT user_id, username, full_name, email, phone_number, user_type, gender, age, profession, interests, country, city, registration_time FROM nearyou.users WHERE ('$__all' IN ('${age_range:raw}') OR age IN (${age_range:csv})) AND ('$__all' IN ('${profession:raw}') OR profession IN (${profession:csv}))",
           "refId": "A"
         }
       ],
@@ -271,7 +271,7 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL 24 HOUR\nGROUP BY poi_name, time\nORDER BY time DESC, visits DESC\nLIMIT 100",
+          "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events e\nJOIN nearyou.users u ON e.user_id = u.user_id\nWHERE \n    event_time >= NOW() - INTERVAL ${time_range:raw}\n    AND (\n        '$__all' IN ('${day_time:raw}')\n        OR (toHour(event_time) >= 6 AND toHour(event_time) < 12 AND 'morning' IN ('${day_time:raw}'))\n        OR (toHour(event_time) >= 12 AND toHour(event_time) < 18 AND 'afternoon' IN ('${day_time:raw}'))\n        OR (toHour(event_time) >= 18 AND toHour(event_time) < 24 AND 'evening' IN ('${day_time:raw}'))\n        OR (toHour(event_time) >= 0 AND toHour(event_time) < 6 AND 'night' IN ('${day_time:raw}'))\n    )\n    AND ('$__all' IN ('${age_range:raw}') OR u.age IN (${age_range:csv}))\n    AND ('$__all' IN ('${profession:raw}') OR u.profession IN (${profession:csv}))\nGROUP BY poi_name, time\nORDER BY time DESC, visits DESC\nLIMIT 100",
           "refId": "A"
         }
       ],
@@ -391,7 +391,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n    shop_id, \n    shop_name, \n    category,\n    ST_Y(geom) as lat, \n    ST_X(geom) as lon \nFROM shops\nLIMIT 100",
+          "rawSql": "SELECT \n    shop_id, \n    shop_name, \n    category,\n    ST_Y(geom) as lat, \n    ST_X(geom) as lon \nFROM shops\nWHERE ('$__all' IN ('${shop_category:raw}') OR category IN (${shop_category:csv}))\nLIMIT 100",
           "refId": "A"
         }
       ],
@@ -543,7 +543,7 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT\n    user_id,\n    event_time,\n    latitude,\n    longitude,\n    poi_name,\n    poi_range\nFROM nearyou.user_events\nWHERE event_time >= now() - INTERVAL 24 HOUR\nORDER BY user_id, event_time",
+          "rawSql": "SELECT\n    e.user_id,\n    e.event_time,\n    e.latitude,\n    e.longitude,\n    e.poi_name,\n    e.poi_range\nFROM nearyou.user_events e\nJOIN nearyou.users u ON e.user_id = u.user_id\nWHERE \n    e.event_time >= NOW() - INTERVAL ${time_range:raw}\n    AND ('$__all' IN ('${age_range:raw}') OR u.age IN (${age_range:csv}))\n    AND ('$__all' IN ('${profession:raw}') OR u.profession IN (${profession:csv}))\nORDER BY e.user_id, e.event_time",
           "refId": "A"
         }
       ],
@@ -626,11 +626,11 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT \n    poi_name,\n    COUNT(*) as total_visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL 24 HOUR\nGROUP BY poi_name\nORDER BY total_visits DESC\nLIMIT 10",
+          "rawSql": "SELECT \n    poi_name,\n    COUNT(*) as total_visits\nFROM nearyou.user_events e\nJOIN nearyou.users u ON e.user_id = u.user_id\nWHERE \n    event_time >= NOW() - INTERVAL ${time_range:raw}\n    AND ('$__all' IN ('${day_time:raw}')\n        OR (toHour(event_time) >= 6 AND toHour(event_time) < 12 AND 'morning' IN ('${day_time:raw}'))\n        OR (toHour(event_time) >= 12 AND toHour(event_time) < 18 AND 'afternoon' IN ('${day_time:raw}'))\n        OR (toHour(event_time) >= 18 AND toHour(event_time) < 24 AND 'evening' IN ('${day_time:raw}'))\n        OR (toHour(event_time) >= 0 AND toHour(event_time) < 6 AND 'night' IN ('${day_time:raw}'))\n    )\n    AND ('$__all' IN ('${age_range:raw}') OR u.age IN (${age_range:csv}))\n    AND ('$__all' IN ('${profession:raw}') OR u.profession IN (${profession:csv}))\nGROUP BY poi_name\nORDER BY total_visits DESC\nLIMIT 10",
           "refId": "A"
         }
       ],
-      "title": "Top 10 Negozi Più Visitati (Ultime 24 Ore)",
+      "title": "Top 10 Negozi Più Visitati (Ultimi 24 Ore)",
       "type": "barchart"
     }
   ],
@@ -663,6 +663,197 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "ultimi 24 ore",
+          "value": "now-24h"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Periodo",
+        "multi": false,
+        "name": "time_range",
+        "options": [
+          {
+            "selected": true,
+            "text": "ultimi 24 ore",
+            "value": "now-24h"
+          },
+          {
+            "selected": false,
+            "text": "ultimi 3 giorni",
+            "value": "now-3d"
+          },
+          {
+            "selected": false,
+            "text": "ultima settimana",
+            "value": "now-7d"
+          },
+          {
+            "selected": false,
+            "text": "ultimo mese",
+            "value": "now-30d"
+          }
+        ],
+        "query": "now-24h, now-3d, now-7d, now-30d",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": ["Tutte"],
+          "value": ["$__all"]
+        },
+        "hide": 0,
+        "includeAll": true,
+        "label": "Fascia Oraria",
+        "multi": true,
+        "name": "day_time",
+        "options": [
+          {
+            "selected": true,
+            "text": "Tutte",
+            "value": "$__all"
+          },
+          {
+            "selected": false,
+            "text": "Mattina (6-12)",
+            "value": "morning"
+          },
+          {
+            "selected": false,
+            "text": "Pomeriggio (12-18)",
+            "value": "afternoon"
+          },
+          {
+            "selected": false,
+            "text": "Sera (18-24)",
+            "value": "evening"
+          },
+          {
+            "selected": false,
+            "text": "Notte (0-6)",
+            "value": "night"
+          }
+        ],
+        "query": "morning,afternoon,evening,night",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": ["Tutte"],
+          "value": ["$__all"]
+        },
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "ClickHouse"
+        },
+        "definition": "SELECT DISTINCT age FROM nearyou.users ORDER BY age",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Fascia d'Età",
+        "multi": true,
+        "name": "age_range",
+        "options": [],
+        "query": "SELECT DISTINCT age FROM nearyou.users ORDER BY age",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": ["Tutte"],
+          "value": ["$__all"]
+        },
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "ClickHouse"
+        },
+        "definition": "SELECT DISTINCT profession FROM nearyou.users ORDER BY profession",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Professione",
+        "multi": true,
+        "name": "profession",
+        "options": [],
+        "query": "SELECT DISTINCT profession FROM nearyou.users ORDER BY profession",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": ["Tutte"],
+          "value": ["$__all"]
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "PostgreSQL"
+        },
+        "definition": "SELECT DISTINCT category FROM shops ORDER BY category",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Categoria Negozio",
+        "multi": true,
+        "name": "shop_category",
+        "options": [],
+        "query": "SELECT DISTINCT category FROM shops ORDER BY category",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": ["Tutte"],
+          "value": ["$__all"]
+        },
+        "hide": 0,
+        "includeAll": true,
+        "label": "Popolarità Negozio",
+        "multi": true,
+        "name": "shop_popularity",
+        "options": [
+          {
+            "selected": true,
+            "text": "Tutte",
+            "value": "$__all"
+          },
+          {
+            "selected": false,
+            "text": "Alta (>100 visite)",
+            "value": "high"
+          },
+          {
+            "selected": false,
+            "text": "Media (20-100 visite)",
+            "value": "medium"
+          },
+          {
+            "selected": false,
+            "text": "Bassa (<20 visite)",
+            "value": "low"
+          }
+        ],
+        "query": "high,medium,low",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
       }
     ]
   },
@@ -686,7 +877,7 @@
   },
   "timezone": "",
   "title": "NearYou - Dashboard Completa",
-  "uid": "nearyou-dashboard-v3",
+  "uid": "nearyou-dashboard-v4",
   "version": 1,
   "weekStart": ""
 }
