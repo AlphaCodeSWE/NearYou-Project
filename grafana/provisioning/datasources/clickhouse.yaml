@@ -11,7 +11,9 @@ datasources:
       port: 8123
       server: clickhouse-server
       tlsSkipVerify: true
+      protocol: http
+      host: clickhouse-server
     secureJsonData:
       password: pwe@123@l@
-    editable: false
+    editable: true
     isDefault: true
