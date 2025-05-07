@@ -66,11 +66,11 @@ def main():
     panel_configs = [
     {"file": "stat_event.json", "id": 1, "pos": {"h": 4, "w": 12, "x": 0, "y": 0}},
     {"file": "stat_shops.json", "id": 2, "pos": {"h": 4, "w": 12, "x": 12, "y": 0}},
-    {"file": "shops_visits_stats.json", "id": 3, "pos": {"h": 8, "w": 24, "x": 0, "y": 4}},
-    {"file": "map_selected_shops.json", "id": 4, "pos": {"h": 13, "w": 24, "x": 0, "y": 12}},
-    {"file": "map_user_routes.json", "id": 5, "pos": {"h": 13, "w": 24, "x": 0, "y": 25}},
-    {"file": "top_visited_shops.json", "id": 6, "pos": {"h": 8, "w": 12, "x": 0, "y": 38}},
-    {"file": "users_table.json", "id": 7, "pos": {"h": 12, "w": 24, "x": 0, "y": 46}}
+    {"file": "users_table.json", "id": 3, "pos": {"h": 8, "w": 24, "x": 0, "y": 4}},
+    {"file": "shops_visits_stats.json", "id": 4, "pos": {"h": 8, "w": 24, "x": 0, "y": 12}},
+    {"file": "map_selected_shops.json", "id": 5, "pos": {"h": 13, "w": 24, "x": 0, "y": 20}},
+    {"file": "map_user_routes.json", "id": 6, "pos": {"h": 13, "w": 24, "x": 0, "y": 33}},
+    {"file": "top_visited_shops.json", "id": 7, "pos": {"h": 8, "w": 12, "x": 0, "y": 46}}
     ]
     
     # Carica i pannelli dai file JSON
