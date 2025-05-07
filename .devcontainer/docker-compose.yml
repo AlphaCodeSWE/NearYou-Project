@@ -388,7 +388,7 @@ services:
     command: >
       bash -c "
       echo 'Attendo che Grafana sia pronto...' &&
-      sleep 120 &&
+      sleep 30 &&
       echo 'Esecuzione dello script di assemblaggio dashboard...' &&
       python3 /workspace/grafana/provisioning/assemble_dashboard.py
       "
