@@ -365,6 +365,7 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SERVER_ROOT_URL=http://localhost:3000
       - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
     ports:
       - "3000:3000"
     depends_on:
@@ -376,7 +377,6 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
-
 
 
 volumes:
