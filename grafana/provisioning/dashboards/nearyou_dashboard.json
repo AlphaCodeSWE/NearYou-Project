@@ -271,7 +271,7 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events e\nJOIN nearyou.users u ON e.user_id = u.user_id\nWHERE \n    event_time >= NOW() - INTERVAL ${time_range:raw}\n    AND (\n        '$__all' IN ('${day_time:raw}')\n        OR (toHour(event_time) >= 6 AND toHour(event_time) < 12 AND 'morning' IN ('${day_time:raw}'))\n        OR (toHour(event_time) >= 12 AND toHour(event_time) < 18 AND 'afternoon' IN ('${day_time:raw}'))\n        OR (toHour(event_time) >= 18 AND toHour(event_time) < 24 AND 'evening' IN ('${day_time:raw}'))\n        OR (toHour(event_time) >= 0 AND toHour(event_time) < 6 AND 'night' IN ('${day_time:raw}'))\n    )\n    AND ('$__all' IN ('${age_range:raw}') OR u.age IN (${age_range:csv}))\n    AND ('$__all' IN ('${profession:raw}') OR u.profession IN (${profession:csv}))\nGROUP BY poi_name, time\nORDER BY time DESC, visits DESC\nLIMIT 100",
+          "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL ${time_range:raw}\nGROUP BY poi_name, time\nORDER BY time DESC, visits DESC\nLIMIT 100",
           "refId": "A"
         }
       ],
@@ -626,7 +626,7 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT \n    poi_name,\n    COUNT(*) as total_visits\nFROM nearyou.user_events e\nJOIN nearyou.users u ON e.user_id = u.user_id\nWHERE \n    event_time >= NOW() - INTERVAL ${time_range:raw}\n    AND ('$__all' IN ('${day_time:raw}')\n        OR (toHour(event_time) >= 6 AND toHour(event_time) < 12 AND 'morning' IN ('${day_time:raw}'))\n        OR (toHour(event_time) >= 12 AND toHour(event_time) < 18 AND 'afternoon' IN ('${day_time:raw}'))\n        OR (toHour(event_time) >= 18 AND toHour(event_time) < 24 AND 'evening' IN ('${day_time:raw}'))\n        OR (toHour(event_time) >= 0 AND toHour(event_time) < 6 AND 'night' IN ('${day_time:raw}'))\n    )\n    AND ('$__all' IN ('${age_range:raw}') OR u.age IN (${age_range:csv}))\n    AND ('$__all' IN ('${profession:raw}') OR u.profession IN (${profession:csv}))\nGROUP BY poi_name\nORDER BY total_visits DESC\nLIMIT 10",
+          "rawSql": "SELECT \n    poi_name,\n    COUNT(*) as total_visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL ${time_range:raw}\nGROUP BY poi_name\nORDER BY total_visits DESC\nLIMIT 10",
           "refId": "A"
         }
       ],
