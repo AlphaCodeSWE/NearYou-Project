@@ -4,7 +4,7 @@ set -e
 echo "--- Inizio script di inizializzazione dashboard Grafana ---"
 echo "Working directory: $(pwd)"
 
-# Funzione per attendere che un servizio sia pronto
+# Funzione per attendere che un servizio sia pronto usando Python invece di curl
 wait_for_service() {
     local service=$1
     local url=$2
@@ -13,7 +13,7 @@ wait_for_service() {
     
     echo "Attendo che $service sia pronto..."
     while [ $attempt -lt $max_attempts ]; do
-        if curl -s "$url" > /dev/null; then
+        if python3 -c "import urllib.request; try: urllib.request.urlopen('$url', timeout=5); print('ok'); exit(0); except: exit(1)" > /dev/null 2>&1; then
             echo "$service è pronto!"
             return 0
         fi
