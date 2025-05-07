@@ -385,14 +385,20 @@ services:
       dockerfile: .devcontainer/Dockerfile
     volumes:
       - ..:/workspace:cached
-    command: bash -c "chmod +x /workspace/.devcontainer/scripts/init_grafana_dashboard.sh && /workspace/.devcontainer/scripts/init_grafana_dashboard.sh"
+    command: >
+      bash -c "
+      echo 'Attendo che Grafana sia pronto...' &&
+      sleep 120 &&
+      echo 'Esecuzione dello script di assemblaggio dashboard...' &&
+      python3 /workspace/grafana/provisioning/assemble_dashboard.py
+      "
     environment:
       - PYTHONPATH=/workspace/src:/workspace
     depends_on:
       - grafana
       - clickhouse
       - postgres
-    restart: on-failure:50
+    restart: on-failure:5
 
 
 volumes:
