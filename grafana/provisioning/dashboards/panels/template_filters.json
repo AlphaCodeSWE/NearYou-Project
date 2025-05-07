@@ -1,59 +1,59 @@
 [
-    {
-      "current": {
-        "selected": false,
-        "text": "",
-        "value": ""
-      },
-      "hide": 0,
-      "name": "age_filter",
-      "options": [
-        {
-          "selected": true,
-          "text": "",
-          "value": ""
-        }
-      ],
-      "query": "${age:queryparam} ? 'AND user_id IN (SELECT user_id FROM nearyou.users WHERE age IN (${age:csv}))' : ''",
-      "skipUrlSync": false,
-      "type": "textbox"
+  {
+    "current": {
+      "selected": false,
+      "text": "",
+      "value": ""
     },
-    {
-      "current": {
-        "selected": false,
+    "hide": 0,
+    "name": "age_filter",
+    "options": [
+      {
+        "selected": true,
         "text": "",
         "value": ""
-      },
-      "hide": 0,
-      "name": "profession_filter",
-      "options": [
-        {
-          "selected": true,
-          "text": "",
-          "value": ""
-        }
-      ],
-      "query": "${profession:queryparam} ? 'AND user_id IN (SELECT user_id FROM nearyou.users WHERE profession IN (${profession:csv}))' : ''",
-      "skipUrlSync": false,
-      "type": "textbox"
+      }
+    ],
+    "query": "${age:queryparam} ? 'AND user_id IN (SELECT user_id FROM nearyou.users WHERE age IN (${age:csv}))' : ''",
+    "skipUrlSync": false,
+    "type": "textbox"
+  },
+  {
+    "current": {
+      "selected": false,
+      "text": "",
+      "value": ""
     },
-    {
-      "current": {
-        "selected": false,
+    "hide": 0,
+    "name": "profession_filter",
+    "options": [
+      {
+        "selected": true,
         "text": "",
         "value": ""
-      },
-      "hide": 0,
-      "name": "interests_filter",
-      "options": [
-        {
-          "selected": true,
-          "text": "",
-          "value": ""
-        }
-      ],
-      "query": "${interests:queryparam} ? 'AND user_id IN (SELECT user_id FROM nearyou.users WHERE interests IN (${interests:csv}))' : ''",
-      "skipUrlSync": false,
-      "type": "textbox"
-    }
-  ]
+      }
+    ],
+    "query": "${profession:queryparam} ? 'AND user_id IN (SELECT user_id FROM nearyou.users WHERE profession IN (${profession:csv}))' : ''",
+    "skipUrlSync": false,
+    "type": "textbox"
+  },
+  {
+    "current": {
+      "selected": false,
+      "text": "",
+      "value": ""
+    },
+    "hide": 0,
+    "name": "interests_filter",
+    "options": [
+      {
+        "selected": true,
+        "text": "",
+        "value": ""
+      }
+    ],
+    "query": "${interests:queryparam} ? 'AND user_id IN (SELECT user_id FROM nearyou.users WHERE interests IN (${interests:csv}))' : ''",
+    "skipUrlSync": false,
+    "type": "textbox"
+  }
+]

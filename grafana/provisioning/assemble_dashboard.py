@@ -9,7 +9,7 @@ def main():
     panels_dir = os.path.join(base_dir, "provisioning/dashboards/panels")
     output_file = os.path.join(base_dir, "provisioning/dashboards/nearyou_dashboard.json")
     
-    print("=== Creazione dashboard NearYou con pannelli da file JSON ===")
+    print("=== Creazione dashboard NearYou completa con filtri e mappe ===")
     
     # Crea la struttura base della dashboard
     dashboard = {
@@ -53,7 +53,9 @@ def main():
     panel_configs = [
         {"file": "stat_event.json", "id": 1, "pos": {"h": 4, "w": 12, "x": 0, "y": 0}},
         {"file": "stat_shops.json", "id": 2, "pos": {"h": 4, "w": 12, "x": 12, "y": 0}},
-        {"file": "users_table.json", "id": 3, "pos": {"h": 15, "w": 24, "x": 0, "y": 4}}
+        {"file": "users_table.json", "id": 3, "pos": {"h": 8, "w": 24, "x": 0, "y": 4}},
+        {"file": "map_user_routes.json", "id": 4, "pos": {"h": 13, "w": 24, "x": 0, "y": 12}},
+        {"file": "map_shops.json", "id": 5, "pos": {"h": 13, "w": 24, "x": 0, "y": 25}}
     ]
     
     # Carica i pannelli dai file JSON
@@ -72,6 +74,32 @@ def main():
             print(f"Aggiunto pannello da {config['file']} con ID {config['id']}")
         except Exception as e:
             print(f"Errore nel caricamento del pannello {config['file']}: {e}")
+    
+    # Carica le variabili di template per i filtri
+    template_files = [
+        "template_age.json",
+        "template_profession.json",
+        "template_interests.json",
+        "template_filters.json",
+        "template_datasources.json"
+    ]
+    
+    for template_file in template_files:
+        try:
+            file_path = os.path.join(panels_dir, template_file)
+            with open(file_path, 'r') as f:
+                if template_file in ["template_filters.json", "template_datasources.json"]:
+                    # Questi file contengono array di oggetti
+                    template_data = json.load(f)
+                    for item in template_data:
+                        dashboard["templating"]["list"].append(item)
+                else:
+                    # Questi file contengono un singolo oggetto
+                    template_data = json.load(f)
+                    dashboard["templating"]["list"].append(template_data)
+                print(f"Aggiunti filtri da {template_file}")
+        except Exception as e:
+            print(f"Errore nel caricamento dei filtri da {template_file}: {e}")
     
     # Salva la dashboard
     with open(output_file, 'w') as f:
@@ -92,7 +120,7 @@ def main():
     except Exception as e:
         print(f"Errore nel riavvio di Grafana: {e}")
     
-    print("\nDashboard creata con pannelli caricati da file!")
+    print("\nDashboard completa creata con pannelli, filtri e mappe!")
     print("Accedi a Grafana all'indirizzo http://localhost:3000 con le credenziali admin/admin")
 
 if __name__ == "__main__":
