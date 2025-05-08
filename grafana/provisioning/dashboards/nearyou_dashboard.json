@@ -75,11 +75,11 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT COUNT(*) as total_events FROM nearyou.user_events WHERE event_time >= now() - INTERVAL ${time_range:raw}",
+          "rawSql": "SELECT COUNT(*) as total_events FROM nearyou.user_events WHERE event_time >= now() - INTERVAL 1 DAY",
           "refId": "A"
         }
       ],
-      "title": "Eventi Totali",
+      "title": "Eventi Oggi",
       "type": "stat"
     },
     {
@@ -271,11 +271,11 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL ${time_range:raw}\nGROUP BY poi_name, time\nORDER BY time DESC, visits DESC\nLIMIT 100",
+          "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL 24 HOUR\nGROUP BY poi_name, time\nORDER BY time DESC, visits DESC\nLIMIT 100",
           "refId": "A"
         }
       ],
-      "title": "Visite per Negozio",
+      "title": "Visite per Negozio (Ultimi 24 Ore)",
       "type": "timeseries"
     },
     {
@@ -543,7 +543,7 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT\n    user_id,\n    event_time,\n    latitude,\n    longitude,\n    poi_name,\n    poi_range\nFROM nearyou.user_events\nWHERE event_time >= now() - INTERVAL ${time_range:raw}\nORDER BY user_id, event_time",
+          "rawSql": "SELECT\n    user_id,\n    event_time,\n    latitude,\n    longitude,\n    poi_name,\n    poi_range\nFROM nearyou.user_events\nWHERE event_time >= now() - INTERVAL 24 HOUR\nORDER BY user_id, event_time",
           "refId": "A"
         }
       ],
@@ -626,11 +626,11 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT \n    poi_name,\n    COUNT(*) as total_visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL ${time_range:raw}\nGROUP BY poi_name\nORDER BY total_visits DESC\nLIMIT 10",
+          "rawSql": "SELECT \n    poi_name,\n    COUNT(*) as total_visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL 24 HOUR\nGROUP BY poi_name\nORDER BY total_visits DESC\nLIMIT 10",
           "refId": "A"
         }
       ],
-      "title": "Top 10 Negozi Più Visitati",
+      "title": "Top 10 Negozi Più Visitati (Ultime 24 Ore)",
       "type": "barchart"
     }
   ],
@@ -663,44 +663,6 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": "ultimi 24 ore",
-          "value": "24 HOUR"
-        },
-        "hide": 0,
-        "includeAll": false,
-        "label": "Periodo",
-        "multi": false,
-        "name": "time_range",
-        "options": [
-          {
-            "selected": true,
-            "text": "ultimi 24 ore",
-            "value": "24 HOUR"
-          },
-          {
-            "selected": false,
-            "text": "ultimi 3 giorni",
-            "value": "3 DAY"
-          },
-          {
-            "selected": false,
-            "text": "ultima settimana",
-            "value": "7 DAY"
-          },
-          {
-            "selected": false,
-            "text": "ultimo mese",
-            "value": "30 DAY"
-          }
-        ],
-        "query": "24 HOUR, 3 DAY, 7 DAY, 30 DAY",
-        "queryValue": "",
-        "skipUrlSync": false,
-        "type": "custom"
       }
     ]
   },
@@ -724,7 +686,7 @@
   },
   "timezone": "",
   "title": "NearYou - Dashboard Completa",
-  "uid": "nearyou-dashboard-v4",
+  "uid": "nearyou-dashboard-v3",
   "version": 1,
   "weekStart": ""
 }
