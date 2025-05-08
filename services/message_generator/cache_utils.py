@@ -8,9 +8,9 @@ from typing import Dict, Any, Optional
 sys.path.insert(0, '/workspace')  # Percorso alla radice del progetto
 
 try:
-    # Tentativo di importazione diretta
-    from redis.redis_cache import RedisCache
-    from redis.memory_cache import MemoryCache
+    # Tentativo di importazione diretta dalla nuova directory
+    from redis_cache.redis_cache import RedisCache
+    from redis_cache.memory_cache import MemoryCache
     logging.info("Moduli di cache importati con successo")
 except ImportError as e:
     logging.warning(f"Errore importazione moduli cache: {e}")
@@ -19,17 +19,18 @@ except ImportError as e:
     try:
         import importlib.util
         
-        redis_path = '/workspace/redis/redis_cache.py'
-        memory_path = '/workspace/redis/memory_cache.py'
+        # Percorsi aggiornati alla nuova directory
+        redis_path = '/workspace/redis_cache/redis_cache.py'
+        memory_path = '/workspace/redis_cache/memory_cache.py'
         
         # Importa RedisCache
-        spec = importlib.util.spec_from_file_location("redis_cache", redis_path)
+        spec = importlib.util.spec_from_file_location("redis_cache_module", redis_path)
         redis_cache_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(redis_cache_module)
         RedisCache = redis_cache_module.RedisCache
         
         # Importa MemoryCache
-        spec = importlib.util.spec_from_file_location("memory_cache", memory_path)
+        spec = importlib.util.spec_from_file_location("memory_cache_module", memory_path)
         memory_cache_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(memory_cache_module)
         MemoryCache = memory_cache_module.MemoryCache
