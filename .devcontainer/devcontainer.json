@@ -3,7 +3,7 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspace",
-  "forwardPorts": [8081, 1883, 9093, 9092, 8080, 8123, 9000, 3000, 8082, 8083, 8793,8000,8001,8002,5000,8003],
+  "forwardPorts": [8081, 1883, 9093, 9092, 8080, 8123, 9000, 3000, 8082, 8083, 8793,8000,8001,8002,5000,8003,6379],
   "features": {
     "docker-in-docker": "latest"
   },
