@@ -75,11 +75,11 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT COUNT(*) as total_events FROM nearyou.user_events WHERE event_time >= now() - INTERVAL ${time_range:raw}",
+          "rawSql": "SELECT COUNT(*) as total_events FROM nearyou.user_events WHERE event_time >= now() - INTERVAL 1 DAY",
           "refId": "A"
         }
       ],
-      "title": "Eventi Totali",
+      "title": "Eventi Oggi",
       "type": "stat"
     },
     {
@@ -184,7 +184,7 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT user_id, username, full_name, email, phone_number, user_type, gender, age, profession, interests, country, city, registration_time FROM nearyou.users WHERE (gender IN (${gender:sqlquote}) OR '$__all' IN (${gender:sqlquote})) AND (city IN (${city:sqlquote}) OR '$__all' IN (${city:sqlquote})) AND (interests IN (${interests:sqlquote}) OR '$__all' IN (${interests:sqlquote})) AND (age IN (${age_range:sqlquote}) OR '$__all' IN (${age_range:sqlquote})) AND (profession IN (${profession:sqlquote}) OR '$__all' IN (${profession:sqlquote}))",
+          "rawSql": "SELECT user_id, username, full_name, email, phone_number, user_type, gender, age, profession, interests, country, city, registration_time FROM nearyou.users",
           "refId": "A"
         }
       ],
@@ -271,11 +271,11 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events e\nJOIN nearyou.users u ON e.user_id = u.user_id\nWHERE \n    event_time >= NOW() - INTERVAL ${time_range:raw}\n    AND (poi_name IN (${selected_shops:sqlquote}) OR '$__all' IN (${selected_shops:sqlquote}))\n    AND (u.gender IN (${gender:sqlquote}) OR '$__all' IN (${gender:sqlquote}))\n    AND (u.city IN (${city:sqlquote}) OR '$__all' IN (${city:sqlquote}))\n    AND (u.interests IN (${interests:sqlquote}) OR '$__all' IN (${interests:sqlquote}))\n    AND (u.age IN (${age_range:sqlquote}) OR '$__all' IN (${age_range:sqlquote}))\n    AND (u.profession IN (${profession:sqlquote}) OR '$__all' IN (${profession:sqlquote}))\n    AND (e.poi_range <= toFloat64(${poi_range:raw}) OR '$__all' IN (${poi_range:sqlquote}))\n    AND (\n        '$__all' IN (${day_time:sqlquote})\n        OR (toHour(event_time) >= 6 AND toHour(event_time) < 12 AND 'morning' IN (${day_time:sqlquote}))\n        OR (toHour(event_time) >= 12 AND toHour(event_time) < 18 AND 'afternoon' IN (${day_time:sqlquote}))\n        OR (toHour(event_time) >= 18 AND toHour(event_time) < 24 AND 'evening' IN (${day_time:sqlquote}))\n        OR (toHour(event_time) >= 0 AND toHour(event_time) < 6 AND 'night' IN (${day_time:sqlquote}))\n    )\nGROUP BY poi_name, time\nORDER BY time DESC, visits DESC\nLIMIT 100",
+          "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL 24 HOUR\nAND (poi_name IN (${selected_shops:sqlquote}) OR '$__all' IN (${selected_shops:sqlquote}))\nGROUP BY poi_name, time\nORDER BY time DESC, visits DESC\nLIMIT 100",
           "refId": "A"
         }
       ],
-      "title": "Visite per Negozio",
+      "title": "Visite per Negozio (Ultimi 24 Ore)",
       "type": "timeseries"
     },
     {
@@ -391,7 +391,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n    shop_id, \n    shop_name, \n    category,\n    ST_Y(geom) as lat, \n    ST_X(geom) as lon \nFROM shops\nWHERE (shop_name IN (${selected_shops:sqlquote}) OR '$__all' IN (${selected_shops:sqlquote}))\nAND (category IN (${shop_category:sqlquote}) OR '$__all' IN (${shop_category:sqlquote}))\nLIMIT 100",
+          "rawSql": "SELECT \n    shop_id, \n    shop_name, \n    category,\n    ST_Y(geom) as lat, \n    ST_X(geom) as lon \nFROM shops\nWHERE (shop_name IN (${selected_shops:sqlquote}) OR '$__all' IN (${selected_shops:sqlquote}))\nLIMIT 100",
           "refId": "A"
         }
       ],
@@ -543,7 +543,7 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT\n    e.user_id,\n    event_time,\n    latitude,\n    longitude,\n    poi_name,\n    poi_range\nFROM nearyou.user_events e\nJOIN nearyou.users u ON e.user_id = u.user_id\nWHERE \n    event_time >= now() - INTERVAL ${time_range:raw}\n    AND (u.gender IN (${gender:sqlquote}) OR '$__all' IN (${gender:sqlquote}))\n    AND (u.city IN (${city:sqlquote}) OR '$__all' IN (${city:sqlquote}))\n    AND (u.interests IN (${interests:sqlquote}) OR '$__all' IN (${interests:sqlquote}))\n    AND (u.age IN (${age_range:sqlquote}) OR '$__all' IN (${age_range:sqlquote}))\n    AND (u.profession IN (${profession:sqlquote}) OR '$__all' IN (${profession:sqlquote}))\n    AND (e.poi_range <= toFloat64(${poi_range:raw}) OR '$__all' IN (${poi_range:sqlquote}))\n    AND (\n        '$__all' IN (${day_time:sqlquote})\n        OR (toHour(event_time) >= 6 AND toHour(event_time) < 12 AND 'morning' IN (${day_time:sqlquote}))\n        OR (toHour(event_time) >= 12 AND toHour(event_time) < 18 AND 'afternoon' IN (${day_time:sqlquote}))\n        OR (toHour(event_time) >= 18 AND toHour(event_time) < 24 AND 'evening' IN (${day_time:sqlquote}))\n        OR (toHour(event_time) >= 0 AND toHour(event_time) < 6 AND 'night' IN (${day_time:sqlquote}))\n    )\nORDER BY user_id, event_time",
+          "rawSql": "SELECT\n    user_id,\n    event_time,\n    latitude,\n    longitude,\n    poi_name,\n    poi_range\nFROM nearyou.user_events\nWHERE event_time >= now() - INTERVAL 24 HOUR\nORDER BY user_id, event_time",
           "refId": "A"
         }
       ],
@@ -626,11 +626,11 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT \n    poi_name,\n    COUNT(*) as total_visits\nFROM nearyou.user_events e\nJOIN nearyou.users u ON e.user_id = u.user_id\nWHERE \n    event_time >= NOW() - INTERVAL ${time_range:raw}\n    AND (poi_name IN (${selected_shops:sqlquote}) OR '$__all' IN (${selected_shops:sqlquote}))\n    AND (u.gender IN (${gender:sqlquote}) OR '$__all' IN (${gender:sqlquote}))\n    AND (u.city IN (${city:sqlquote}) OR '$__all' IN (${city:sqlquote}))\n    AND (u.interests IN (${interests:sqlquote}) OR '$__all' IN (${interests:sqlquote}))\n    AND (u.age IN (${age_range:sqlquote}) OR '$__all' IN (${age_range:sqlquote}))\n    AND (u.profession IN (${profession:sqlquote}) OR '$__all' IN (${profession:sqlquote}))\n    AND (e.poi_range <= toFloat64(${poi_range:raw}) OR '$__all' IN (${poi_range:sqlquote}))\n    AND (\n        '$__all' IN (${day_time:sqlquote})\n        OR (toHour(event_time) >= 6 AND toHour(event_time) < 12 AND 'morning' IN (${day_time:sqlquote}))\n        OR (toHour(event_time) >= 12 AND toHour(event_time) < 18 AND 'afternoon' IN (${day_time:sqlquote}))\n        OR (toHour(event_time) >= 18 AND toHour(event_time) < 24 AND 'evening' IN (${day_time:sqlquote}))\n        OR (toHour(event_time) >= 0 AND toHour(event_time) < 6 AND 'night' IN (${day_time:sqlquote}))\n    )\nGROUP BY poi_name\nORDER BY total_visits DESC\nLIMIT 10",
+          "rawSql": "SELECT \n    poi_name,\n    COUNT(*) as total_visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL 24 HOUR\nGROUP BY poi_name\nORDER BY total_visits DESC\nLIMIT 10",
           "refId": "A"
         }
       ],
-      "title": "Top 10 Negozi Più Visitati",
+      "title": "Top 10 Negozi Più Visitati (Ultime 24 Ore)",
       "type": "barchart"
     }
   ],
@@ -658,6 +658,54 @@
         "name": "selected_shops",
         "options": [],
         "query": "SELECT shop_name FROM shops ORDER BY shop_name",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": ["Tutte"],
+          "value": ["$__all"]
+        },
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "ClickHouse"
+        },
+        "definition": "SELECT DISTINCT gender FROM nearyou.users ORDER BY gender",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Genere",
+        "multi": true,
+        "name": "gender",
+        "options": [],
+        "query": "SELECT DISTINCT gender FROM nearyou.users ORDER BY gender",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": ["Tutte"],
+          "value": ["$__all"]
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "PostgreSQL"
+        },
+        "definition": "SELECT DISTINCT category FROM shops ORDER BY category",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Categoria Negozio",
+        "multi": true,
+        "name": "shop_category",
+        "options": [],
+        "query": "SELECT DISTINCT category FROM shops ORDER BY category",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -699,273 +747,6 @@
         ],
         "query": "24 HOUR, 3 DAY, 7 DAY, 30 DAY",
         "queryValue": "",
-        "skipUrlSync": false,
-        "type": "custom"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": ["Tutte"],
-          "value": ["$__all"]
-        },
-        "hide": 0,
-        "includeAll": true,
-        "label": "Fascia Oraria",
-        "multi": true,
-        "name": "day_time",
-        "options": [
-          {
-            "selected": true,
-            "text": "Tutte",
-            "value": "$__all"
-          },
-          {
-            "selected": false,
-            "text": "Mattina (6-12)",
-            "value": "morning"
-          },
-          {
-            "selected": false,
-            "text": "Pomeriggio (12-18)",
-            "value": "afternoon"
-          },
-          {
-            "selected": false,
-            "text": "Sera (18-24)",
-            "value": "evening"
-          },
-          {
-            "selected": false,
-            "text": "Notte (0-6)",
-            "value": "night"
-          }
-        ],
-        "query": "morning,afternoon,evening,night",
-        "queryValue": "",
-        "skipUrlSync": false,
-        "type": "custom"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": ["Tutte"],
-          "value": ["$__all"]
-        },
-        "datasource": {
-          "type": "grafana-clickhouse-datasource",
-          "uid": "ClickHouse"
-        },
-        "definition": "SELECT DISTINCT age FROM nearyou.users ORDER BY age",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Fascia d'Età",
-        "multi": true,
-        "name": "age_range",
-        "options": [],
-        "query": "SELECT DISTINCT age FROM nearyou.users ORDER BY age",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": ["Tutte"],
-          "value": ["$__all"]
-        },
-        "datasource": {
-          "type": "grafana-clickhouse-datasource",
-          "uid": "ClickHouse"
-        },
-        "definition": "SELECT DISTINCT profession FROM nearyou.users ORDER BY profession",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Professione",
-        "multi": true,
-        "name": "profession",
-        "options": [],
-        "query": "SELECT DISTINCT profession FROM nearyou.users ORDER BY profession",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": ["Tutte"],
-          "value": ["$__all"]
-        },
-        "datasource": {
-          "type": "postgres",
-          "uid": "PostgreSQL"
-        },
-        "definition": "SELECT DISTINCT category FROM shops ORDER BY category",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Categoria Negozio",
-        "multi": true,
-        "name": "shop_category",
-        "options": [],
-        "query": "SELECT DISTINCT category FROM shops ORDER BY category",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": ["Tutte"],
-          "value": ["$__all"]
-        },
-        "hide": 0,
-        "includeAll": true,
-        "label": "Popolarità Negozio",
-        "multi": true,
-        "name": "shop_popularity",
-        "options": [
-          {
-            "selected": true,
-            "text": "Tutte",
-            "value": "$__all"
-          },
-          {
-            "selected": false,
-            "text": "Alta (>100 visite)",
-            "value": "high"
-          },
-          {
-            "selected": false,
-            "text": "Media (20-100 visite)",
-            "value": "medium"
-          },
-          {
-            "selected": false,
-            "text": "Bassa (<20 visite)",
-            "value": "low"
-          }
-        ],
-        "query": "high,medium,low",
-        "queryValue": "",
-        "skipUrlSync": false,
-        "type": "custom"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": ["Tutti"],
-          "value": ["$__all"]
-        },
-        "datasource": {
-          "type": "grafana-clickhouse-datasource",
-          "uid": "ClickHouse"
-        },
-        "definition": "SELECT DISTINCT gender FROM nearyou.users ORDER BY gender",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Genere",
-        "multi": true,
-        "name": "gender",
-        "options": [],
-        "query": "SELECT DISTINCT gender FROM nearyou.users ORDER BY gender",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": ["Tutti"],
-          "value": ["$__all"]
-        },
-        "datasource": {
-          "type": "grafana-clickhouse-datasource",
-          "uid": "ClickHouse"
-        },
-        "definition": "SELECT DISTINCT interests FROM nearyou.users ORDER BY interests",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Interessi",
-        "multi": true,
-        "name": "interests",
-        "options": [],
-        "query": "SELECT DISTINCT interests FROM nearyou.users ORDER BY interests",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": ["Tutte"],
-          "value": ["$__all"]
-        },
-        "datasource": {
-          "type": "grafana-clickhouse-datasource",
-          "uid": "ClickHouse"
-        },
-        "definition": "SELECT DISTINCT city FROM nearyou.users ORDER BY city",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Città",
-        "multi": true,
-        "name": "city",
-        "options": [],
-        "query": "SELECT DISTINCT city FROM nearyou.users ORDER BY city",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": ["Tutti"],
-          "value": ["$__all"]
-        },
-        "hide": 0,
-        "includeAll": true,
-        "label": "Raggio di Vicinanza",
-        "multi": false,
-        "name": "poi_range",
-        "options": [
-          {
-            "selected": true,
-            "text": "Tutti",
-            "value": "$__all"
-          },
-          {
-            "selected": false,
-            "text": "Molto vicino (<50m)",
-            "value": "50"
-          },
-          {
-            "selected": false,
-            "text": "Vicino (50-100m)",
-            "value": "100"
-          },
-          {
-            "selected": false,
-            "text": "Medio (100-200m)",
-            "value": "200"
-          },
-          {
-            "selected": false,
-            "text": "Lontano (>200m)",
-            "value": "201"
-          }
-        ],
-        "query": "50,100,200,201",
         "skipUrlSync": false,
         "type": "custom"
       }
