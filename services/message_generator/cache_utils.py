@@ -69,7 +69,14 @@ CACHE_TTL = int(os.getenv("CACHE_TTL", "86400"))  # 24 ore default
 REDIS_HOST = os.getenv("REDIS_HOST", "redis-cache")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 REDIS_DB = int(os.getenv("REDIS_DB", "0"))
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "") or None
+
+# Gestione corretta della password: None se vuota o non presente
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
+if not REDIS_PASSWORD:
+    REDIS_PASSWORD = None
+    logger.info("Redis senza password configurata")
+else:
+    logger.info(f"Redis con password configurata (lunghezza: {len(REDIS_PASSWORD)})")
 
 # Statistiche cache
 cache_stats = {
@@ -81,14 +88,25 @@ cache_stats = {
 # Inizializza cache
 try:
     if CACHE_ENABLED:
-        logger.info(f"Tentativo connessione Redis: {REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")
-        cache = RedisCache(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            db=REDIS_DB,
-            password=REDIS_PASSWORD,
-            default_ttl=CACHE_TTL
-        )
+        logger.info(f"Tentativo connessione Redis: {REDIS_HOST}:{REDIS_PORT}/{REDIS_DB} (auth: {'yes' if REDIS_PASSWORD else 'no'})")
+        
+        # Inizializza RedisCache con o senza password in base alla configurazione
+        if REDIS_PASSWORD is None:
+            cache = RedisCache(
+                host=REDIS_HOST,
+                port=REDIS_PORT,
+                db=REDIS_DB,
+                default_ttl=CACHE_TTL
+            )
+        else:
+            cache = RedisCache(
+                host=REDIS_HOST,
+                port=REDIS_PORT,
+                db=REDIS_DB,
+                password=REDIS_PASSWORD,
+                default_ttl=CACHE_TTL
+            )
+            
         # Fallback a MemoryCache se Redis non disponibile
         if cache.client is None:
             logger.warning(f"Redis non disponibile su {REDIS_HOST}:{REDIS_PORT}, usando cache in-memory")
