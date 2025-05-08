@@ -19,18 +19,28 @@ class RedisCache:
         """Inizializza connessione Redis con parametri configurabili."""
         self.default_ttl = default_ttl
         try:
-            self.client = redis.Redis(
-                host=host,
-                port=port,
-                db=db,
-                password=password,
-                decode_responses=False,  # Manteniamo byte per flessibilità
-                socket_timeout=5
-            )
+            # Crea argomenti solo per parametri non nulli
+            kwargs = {
+                "host": host,
+                "port": port,
+                "db": db,
+                "decode_responses": False,
+                "socket_timeout": 5
+            }
+            
+            # Aggiungi password solo se effettivamente presente
+            if password is not None and password != "":
+                kwargs["password"] = password
+                logger.info(f"Connessione a Redis con password (lunghezza: {len(password)})")
+            else:
+                logger.info("Connessione a Redis senza password")
+                
+            self.client = redis.Redis(**kwargs)
+            
             # Test connessione
             self.client.ping()
             logger.info(f"Cache Redis connessa a {host}:{port}/{db}")
-        except redis.exceptions.ConnectionError as e:
+        except Exception as e:
             logger.warning(f"Impossibile connettersi a Redis: {e}")
             self.client = None
     
