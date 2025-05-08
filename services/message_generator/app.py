@@ -7,6 +7,9 @@ from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage
 from langchain import PromptTemplate
 
+# Importa moduli cache
+from .cache_utils import get_cached_message, cache_message, get_cache_stats
+
 # --------------- Configuration -----------------
 PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()   # . "groq"
 BASE_URL = os.getenv("OPENAI_API_BASE") or None          # https://api.groq.com/openai/v1
@@ -69,6 +72,7 @@ class GenerateRequest(BaseModel):
 
 class GenerateResponse(BaseModel):
     message: str
+    cached: bool = False
 
 app = FastAPI(title="NearYou Message Generator")
 
@@ -76,9 +80,24 @@ app = FastAPI(title="NearYou Message Generator")
 async def health():
     return {"status": "ok"}
 
+@app.get("/cache/stats")
+async def cache_stats():
+    """Endopoint per verificare statistiche cache."""
+    return get_cache_stats()
+
 @app.post("/generate", response_model=GenerateResponse)
 async def generate(req: GenerateRequest):
     try:
+        # Converti oggetti Pydantic in dict per le funzioni cache
+        user_params = req.user.dict()
+        poi_params = req.poi.dict()
+        
+        # Controlla cache
+        cached_message = get_cached_message(user_params, poi_params)
+        if cached_message:
+            return GenerateResponse(message=cached_message, cached=True)
+        
+        # Se non in cache, genera nuovo messaggio
         prompt_text = template.format(
             age=req.user.age,
             profession=req.user.profession,
@@ -88,6 +107,10 @@ async def generate(req: GenerateRequest):
             description=req.poi.description,
         )
         result = call_llm(prompt_text)
-        return GenerateResponse(message=result)
+        
+        # Salva in cache
+        cache_message(user_params, poi_params, result)
+        
+        return GenerateResponse(message=result, cached=False)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

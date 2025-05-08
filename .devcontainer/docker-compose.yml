@@ -400,6 +400,20 @@ services:
       - postgres
     restart: on-failure:5
 
+  redis:
+    image: redis:alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
 volumes:
   kafka_data:
@@ -408,4 +422,5 @@ volumes:
   airflow_pgdata:
   airflow_data:
   grafana_data:
+  redis_data:
  

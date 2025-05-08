@@ -29,3 +29,5 @@ python-multipart
 
 PyJWT
 pydantic
+
+redis==4.5.5    #sistema cache per llm
