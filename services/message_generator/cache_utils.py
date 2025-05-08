@@ -143,7 +143,18 @@ def generate_cache_key(user_params: Dict[str, Any], poi_params: Dict[str, Any]) 
     
     # Crea stringa combinata e genera hash MD5
     combined = f"{age_range}:{profession}:{normalized_interests}:{poi_name}:{poi_category}"
-    return hashlib.md5(combined.encode()).hexdigest()
+    hash_key = hashlib.md5(combined.encode()).hexdigest()
+    
+    # Log per debug
+    logger.info(f"CACHE_KEY INPUTS: age={age}, profession={profession}")
+    logger.info(f"CACHE_KEY NORMALIZED: age_range={age_range}, normalized_interests={normalized_interests}")
+    logger.info(f"CACHE_KEY COMBINED: {combined}")
+    logger.info(f"CACHE_KEY HASH: {hash_key}")
+    
+    return hash_key
+
+
+
 
 def get_cached_message(user_params: Dict[str, Any], poi_params: Dict[str, Any]) -> Optional[str]:
     """Recupera un messaggio dalla cache se disponibile."""
