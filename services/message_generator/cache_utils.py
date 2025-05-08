@@ -1,9 +1,64 @@
 import os
 import hashlib
 import logging
+import sys
 from typing import Dict, Any, Optional
 
-from redis import RedisCache, MemoryCache
+# Aggiungi il percorso principale al PYTHONPATH
+sys.path.insert(0, '/workspace')  # Percorso alla radice del progetto
+
+try:
+    # Tentativo di importazione diretta
+    from redis.redis_cache import RedisCache
+    from redis.memory_cache import MemoryCache
+    logging.info("Moduli di cache importati con successo")
+except ImportError as e:
+    logging.warning(f"Errore importazione moduli cache: {e}")
+    
+    # Fallback: importazione con percorso assoluto
+    try:
+        import importlib.util
+        
+        redis_path = '/workspace/redis/redis_cache.py'
+        memory_path = '/workspace/redis/memory_cache.py'
+        
+        # Importa RedisCache
+        spec = importlib.util.spec_from_file_location("redis_cache", redis_path)
+        redis_cache_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(redis_cache_module)
+        RedisCache = redis_cache_module.RedisCache
+        
+        # Importa MemoryCache
+        spec = importlib.util.spec_from_file_location("memory_cache", memory_path)
+        memory_cache_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(memory_cache_module)
+        MemoryCache = memory_cache_module.MemoryCache
+        
+        logging.info("Moduli di cache importati tramite percorso assoluto")
+    except Exception as fallback_error:
+        logging.error(f"Errore importazione moduli cache (fallback): {fallback_error}")
+        
+        # Definisci classi fallback minime
+        class RedisCache:
+            def __init__(self, **kwargs):
+                self.client = None
+                logging.warning("Usando implementazione fallback di RedisCache")
+            
+            def get(self, key): return None
+            def set(self, key, value, ttl=None): return False
+            def info(self): return {"status": "fallback-implementation"}
+            
+        class MemoryCache:
+            def __init__(self, **kwargs):
+                self.cache = {}
+                logging.warning("Usando implementazione fallback di MemoryCache")
+            
+            def get(self, key): return self.cache.get(key)
+            def set(self, key, value, ttl=None): 
+                self.cache[key] = value
+                return True
+            def info(self): 
+                return {"status": "fallback-memory", "total_keys": len(self.cache)}
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +80,7 @@ cache_stats = {
 # Inizializza cache
 try:
     if CACHE_ENABLED:
+        logger.info(f"Tentativo connessione Redis: {REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")
         cache = RedisCache(
             host=REDIS_HOST,
             port=REDIS_PORT,
@@ -34,8 +90,10 @@ try:
         )
         # Fallback a MemoryCache se Redis non disponibile
         if cache.client is None:
-            logger.warning("Redis non disponibile, usando cache in-memory")
+            logger.warning(f"Redis non disponibile su {REDIS_HOST}:{REDIS_PORT}, usando cache in-memory")
             cache = MemoryCache(default_ttl=CACHE_TTL)
+        else:
+            logger.info(f"Connessione Redis stabilita: {REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")
     else:
         logger.info("Cache disabilitata da configurazione")
         cache = None
@@ -103,7 +161,9 @@ def cache_message(user_params: Dict[str, Any], poi_params: Dict[str, Any], messa
     if poi_category in popular_categories:
         ttl = CACHE_TTL * 2  # TTL doppio per categorie popolari
         
-    return cache.set(cache_key, message, ttl)
+    result = cache.set(cache_key, message, ttl)
+    logger.debug(f"Salvato in cache: {cache_key} (TTL={ttl}s)")
+    return result
 
 def get_cache_stats():
     """Restituisce statistiche sulla cache."""

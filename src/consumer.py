@@ -7,6 +7,7 @@ import logging
 from datetime import datetime, timezone
 
 import asyncpg
+import httpx
 from aiokafka import AIOKafkaConsumer
 from clickhouse_driver import Client as CHClient
 
@@ -16,11 +17,15 @@ from configg import (
     SSL_CAFILE, SSL_CERTFILE, SSL_KEYFILE,
     POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
     CLICKHOUSE_HOST, CLICKHOUSE_PORT, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_DATABASE,
+    MESSAGE_GENERATOR_URL,
 )
 from utils import wait_for_broker
 
 logger = logging.getLogger(__name__)
 setup_logging()
+
+# Configurazione soglia distanza per messaggi (in metri)
+MAX_POI_DISTANCE = 200  # Utenti entro 200m riceveranno messaggi
 
 async def wait_for_postgres(retries: int = 30, delay: int = 2):
     for i in range(retries):
@@ -53,6 +58,74 @@ async def wait_for_clickhouse(retries: int = 30, delay: int = 2):
             logger.debug("ClickHouse non pronto (tentativo %d/%d)", i+1, retries)
             await asyncio.sleep(delay)
     raise RuntimeError("ClickHouse non pronto dopo troppe prove")
+
+async def get_user_profile(ch_client, user_id):
+    """Recupera il profilo dell'utente da ClickHouse."""
+    try:
+        result = ch_client.execute(
+            """
+            SELECT
+                user_id, age, profession, interests
+            FROM users
+            WHERE user_id = %(user_id)s
+            LIMIT 1
+            """,
+            {"user_id": user_id}
+        )
+        if not result:
+            logger.warning(f"Profilo utente {user_id} non trovato")
+            return None
+            
+        user_data = {
+            "user_id": result[0][0],
+            "age": result[0][1],
+            "profession": result[0][2],
+            "interests": result[0][3]
+        }
+        return user_data
+    except Exception as e:
+        logger.error(f"Errore recupero profilo utente {user_id}: {e}")
+        return None
+
+async def get_shop_category(pool, shop_id):
+    """Recupera la categoria del negozio da PostgreSQL."""
+    try:
+        row = await pool.fetchrow(
+            "SELECT category FROM shops WHERE shop_id = $1",
+            shop_id
+        )
+        return row["category"] if row else "negozio"
+    except Exception as e:
+        logger.error(f"Errore recupero categoria negozio {shop_id}: {e}")
+        return "negozio"
+
+async def get_personalized_message(user_data, poi_data):
+    """Ottieni messaggio personalizzato dal message generator."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Prepara il payload con solo i campi necessari
+            payload = {
+                "user": {
+                    "age": user_data["age"],
+                    "profession": user_data["profession"],
+                    "interests": user_data["interests"]
+                },
+                "poi": poi_data
+            }
+            
+            logger.debug(f"Chiamata message-generator con payload: {payload}")
+            response = await client.post(MESSAGE_GENERATOR_URL, json=payload)
+            
+            if response.status_code != 200:
+                logger.error(f"Errore message-generator: {response.status_code} - {response.text}")
+                return ""
+                
+            result = response.json()
+            logger.info(f"Messaggio generato per utente {user_data['user_id']} in {poi_data['name']}: {result['message'][:30]}...")
+            return result["message"]
+    except Exception as e:
+        logger.error(f"Errore chiamata message-generator: {e}")
+        return ""
 
 async def consumer_loop():
     # 1) Readiness
@@ -96,15 +169,19 @@ async def consumer_loop():
         async for msg in consumer:
             data = msg.value
             try:
-                # parse timestamp ISO -> datetime (rimuovo tzinfo per ClickHouse)
+                # Estrai user_id
+                user_id = data["user_id"]
+                
+                # Parse timestamp ISO -> datetime (rimuovo tzinfo per ClickHouse)
                 ts = datetime.fromisoformat(data["timestamp"]).astimezone(timezone.utc).replace(tzinfo=None)
 
-                # cerco il negozio più vicino
+                # Cerca il negozio più vicino
                 row = await pg_pool.fetchrow(
                     """
                     SELECT
                       shop_id,
                       shop_name,
+                      category,
                       ST_Distance(
                         geom::geography,
                         ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
@@ -115,9 +192,38 @@ async def consumer_loop():
                     """,
                     data["longitude"], data["latitude"]
                 )
-                shop_id, shop_name, distance = row["shop_id"], row["shop_name"], row["distance"]
+                
+                shop_id = row["shop_id"]
+                shop_name = row["shop_name"]
+                shop_category = row["category"]
+                distance = row["distance"]
+                
+                # Inizializza poi_info vuoto
+                poi_info = ""
+                
+                # Se l'utente è abbastanza vicino, genera un messaggio personalizzato
+                if distance <= MAX_POI_DISTANCE:
+                    logger.info(f"Utente {user_id} vicino a {shop_name} (d={distance:.1f}m). Generazione messaggio...")
+                    
+                    # Ottieni il profilo utente
+                    user_profile = await get_user_profile(ch, user_id)
+                    
+                    if user_profile:
+                        # Dati POI per il messaggio
+                        poi_data = {
+                            "name": shop_name,
+                            "category": shop_category,
+                            "description": f"Negozio a {distance:.0f}m di distanza"
+                        }
+                        
+                        # Chiamata al message generator
+                        poi_info = await get_personalized_message(user_profile, poi_data)
+                    else:
+                        logger.warning(f"Impossibile generare messaggio: profilo utente {user_id} non trovato")
+                else:
+                    logger.debug(f"Utente {user_id} troppo lontano da {shop_name} (d={distance:.1f}m > {MAX_POI_DISTANCE}m)")
 
-                # scrivo in ClickHouse
+                # Scrivi in ClickHouse con eventuale messaggio
                 ch.execute(
                     """
                     INSERT INTO user_events
@@ -127,20 +233,22 @@ async def consumer_loop():
                     [
                         (msg.offset,
                          ts,
-                         data["user_id"],
+                         user_id,
                          data["latitude"],
                          data["longitude"],
                          distance,
                          shop_name,
-                         "")  # poi_info vuoto
+                         poi_info)
                     ]
                 )
-                logger.info(
-                    "Utente %d → negozio più vicino '%s' (d=%.1fm)",
-                    data["user_id"], shop_name, distance
-                )
+                
+                if poi_info:
+                    logger.info(f"Evento con messaggio per utente {user_id} → negozio '{shop_name}' (d={distance:.1f}m)")
+                else:
+                    logger.debug(f"Evento senza messaggio per utente {user_id} → negozio '{shop_name}' (d={distance:.1f}m)")
+                
             except Exception as e:
-                logger.error("Errore elaborazione messaggio %s: %s", msg, e)
+                logger.error(f"Errore elaborazione messaggio {msg}: {e}")
     finally:
         await consumer.stop()
         await pg_pool.close()
