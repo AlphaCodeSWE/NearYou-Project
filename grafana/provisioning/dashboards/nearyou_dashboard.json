@@ -271,7 +271,7 @@
           },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL 24 HOUR\nAND (poi_name IN (${selected_shops:sqlquote}) OR '$__all' IN (${selected_shops:sqlquote}))\nGROUP BY poi_name, time\nORDER BY time DESC, visits DESC\nLIMIT 100",
+          "rawSql": "SELECT \n    poi_name,\n    toStartOfHour(event_time) as time,\n    COUNT(*) as visits\nFROM nearyou.user_events\nWHERE event_time >= NOW() - INTERVAL 24 HOUR\nGROUP BY poi_name, time\nORDER BY time DESC, visits DESC\nLIMIT 100",
           "refId": "A"
         }
       ],
@@ -391,7 +391,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n    shop_id, \n    shop_name, \n    category,\n    ST_Y(geom) as lat, \n    ST_X(geom) as lon \nFROM shops\nWHERE (shop_name IN (${selected_shops:sqlquote}) OR '$__all' IN (${selected_shops:sqlquote}))\nLIMIT 100",
+          "rawSql": "SELECT \n    shop_id, \n    shop_name, \n    category,\n    ST_Y(geom) as lat, \n    ST_X(geom) as lon \nFROM shops\nLIMIT 100",
           "refId": "A"
         }
       ],
@@ -663,92 +663,6 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": ["Tutte"],
-          "value": ["$__all"]
-        },
-        "datasource": {
-          "type": "grafana-clickhouse-datasource",
-          "uid": "ClickHouse"
-        },
-        "definition": "SELECT DISTINCT gender FROM nearyou.users ORDER BY gender",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Genere",
-        "multi": true,
-        "name": "gender",
-        "options": [],
-        "query": "SELECT DISTINCT gender FROM nearyou.users ORDER BY gender",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": ["Tutte"],
-          "value": ["$__all"]
-        },
-        "datasource": {
-          "type": "postgres",
-          "uid": "PostgreSQL"
-        },
-        "definition": "SELECT DISTINCT category FROM shops ORDER BY category",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Categoria Negozio",
-        "multi": true,
-        "name": "shop_category",
-        "options": [],
-        "query": "SELECT DISTINCT category FROM shops ORDER BY category",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": "ultimi 24 ore",
-          "value": "24 HOUR"
-        },
-        "hide": 0,
-        "includeAll": false,
-        "label": "Periodo",
-        "multi": false,
-        "name": "time_range",
-        "options": [
-          {
-            "selected": true,
-            "text": "ultimi 24 ore",
-            "value": "24 HOUR"
-          },
-          {
-            "selected": false,
-            "text": "ultimi 3 giorni",
-            "value": "3 DAY"
-          },
-          {
-            "selected": false,
-            "text": "ultima settimana",
-            "value": "7 DAY"
-          },
-          {
-            "selected": false,
-            "text": "ultimo mese",
-            "value": "30 DAY"
-          }
-        ],
-        "query": "24 HOUR, 3 DAY, 7 DAY, 30 DAY",
-        "queryValue": "",
-        "skipUrlSync": false,
-        "type": "custom"
       }
     ]
   },
@@ -772,7 +686,7 @@
   },
   "timezone": "",
   "title": "NearYou - Dashboard Completa",
-  "uid": "nearyou-dashboard-v4",
+  "uid": "nearyou-dashboard-v3",
   "version": 1,
   "weekStart": ""
 }
