@@ -3,16 +3,19 @@
 import os
 import logging
 import asyncpg
+import asyncio
+import json
 from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from clickhouse_driver import Client
+from jose import jwt
 
 from .auth import authenticate_user, create_access_token, get_current_user
 
@@ -44,8 +47,38 @@ class Shop(BaseModel):
     lon: float
     distance: Optional[float] = None
 
+# WebSocket connection manager
+class ConnectionManager:
+    def __init__(self):
+        # Dizionario user_id -> connessione WebSocket
+        self.active_connections = {}
+        
+    async def connect(self, websocket: WebSocket, user_id: int):
+        await websocket.accept()
+        self.active_connections[user_id] = websocket
+        logger.info(f"Utente {user_id} connesso via WebSocket. Connessioni attive: {len(self.active_connections)}")
+        
+    def disconnect(self, user_id: int):
+        if user_id in self.active_connections:
+            del self.active_connections[user_id]
+            logger.info(f"Utente {user_id} disconnesso. Connessioni attive: {len(self.active_connections)}")
+    
+    async def send_position_update(self, user_id: int, message: dict):
+        if user_id in self.active_connections:
+            try:
+                await self.active_connections[user_id].send_json(message)
+                return True
+            except Exception as e:
+                logger.error(f"Errore invio aggiornamento a utente {user_id}: {e}")
+                self.disconnect(user_id)
+                return False
+        return False
+
 # ─── Crea l'app FastAPI ───────────────────────────────────────────────────
 app = FastAPI(title="NearYou User Dashboard")
+
+# Istanzia il connection manager per i WebSocket
+manager = ConnectionManager()
 
 # ─── Configurazione CORS ───────────────────────────────────────────────────
 app.add_middleware(
@@ -161,6 +194,98 @@ async def user_positions(current: dict = Depends(get_current_user)):
         ]
     }
 
+# ─── WebSocket per aggiornamenti posizione in tempo reale ───────────────────────────
+@app.websocket("/ws/positions")
+async def websocket_positions(websocket: WebSocket):
+    await websocket.accept()
+    
+    # User ID e token saranno impostati dopo autenticazione
+    user_id = None
+    
+    try:
+        # Prima ricezione: il client invia il token
+        auth_data = await websocket.receive_json()
+        token = auth_data.get("token")
+        
+        if not token:
+            await websocket.send_json({"error": "Token non fornito"})
+            await websocket.close(code=1008)
+            return
+        
+        # Verifica il token JWT
+        try:
+            payload = jwt.decode(
+                token, 
+                os.getenv("JWT_SECRET"), 
+                algorithms=[os.getenv("JWT_ALGORITHM")]
+            )
+            user_id = payload.get("user_id")
+            
+            if not user_id:
+                await websocket.send_json({"error": "Token non valido"})
+                await websocket.close(code=1008)
+                return
+                
+        except Exception as e:
+            logger.error(f"Errore verifica token WebSocket: {e}")
+            await websocket.send_json({"error": "Token non valido"})
+            await websocket.close(code=1008)
+            return
+        
+        # Registra la connessione
+        await manager.connect(websocket, user_id)
+        
+        # Invia conferma di connessione
+        await websocket.send_json({
+            "type": "connection_established",
+            "user_id": user_id
+        })
+        
+        # Loop principale: invia aggiornamenti posizione in tempo reale
+        while True:
+            # Recupera ultima posizione dell'utente
+            position_query = """
+                SELECT
+                    user_id,
+                    argMax(latitude, event_time) AS lat,
+                    argMax(longitude, event_time) AS lon,
+                    argMax(poi_info, event_time) AS msg,
+                    max(event_time) as time
+                FROM user_events
+                WHERE user_id = %(uid)s
+                GROUP BY user_id
+                LIMIT 1
+            """
+            
+            rows = ch.execute(position_query, {"uid": user_id})
+            
+            if rows:
+                r = rows[0]
+                time_str = r[4].strftime("%Y-%m-%d %H:%M:%S") if r[4] else None
+                
+                # Invia aggiornamento posizione
+                await websocket.send_json({
+                    "type": "position_update",
+                    "data": {
+                        "user_id": r[0],
+                        "latitude": r[1],
+                        "longitude": r[2],
+                        "message": r[3] or None,
+                        "timestamp": time_str
+                    }
+                })
+            
+            # Attendi prima del prossimo aggiornamento
+            await asyncio.sleep(1)  # Aggiornamento ogni secondo
+            
+    except WebSocketDisconnect:
+        if user_id:
+            manager.disconnect(user_id)
+    except Exception as e:
+        logger.error(f"Errore WebSocket: {e}")
+        if user_id:
+            manager.disconnect(user_id)
+
 # ─── API protetta: restituisce profilo utente ───────────────────────────
 @app.get("/api/user/profile", response_model=UserProfile)
 async def user_profile(
@@ -263,6 +388,62 @@ async def shops_nearby(
         
     except Exception as e:
         logger.error(f"Errore recupero negozi vicini: {e}")
+        raise HTTPException(status_code=500, detail=f"Errore interno: {str(e)}")
+
+# ─── API protetta: restituisce negozi in un'area specifica (lazy loading) ───────────────────────────
+@app.get("/api/shops/inArea", response_model=List[Shop])
+async def shops_in_area(
+    current: dict = Depends(get_current_user),
+    n: float = Query(..., description="Limite nord (latitudine)"),
+    s: float = Query(..., description="Limite sud (latitudine)"),
+    e: float = Query(..., description="Limite est (longitudine)"),
+    w: float = Query(..., description="Limite ovest (longitudine)")
+):
+    """Restituisce i negozi all'interno di un'area geografica specificata (lazy loading)."""
+    # Limita l'area massima per evitare richieste troppo grandi
+    area_size = (n - s) * (e - w)
+    if area_size > 1.0:  # Valore arbitrario, regolare in base alle necessità
+        raise HTTPException(
+            status_code=400, 
+            detail="Area richiesta troppo grande. Fare zoom in per visualizzare i negozi."
+        )
+    
+    try:
+        conn = await get_postgres_connection()
+        
+        # Query per recuperare i negozi all'interno dell'area specificata
+        shops_query = """
+            SELECT 
+                shop_id, 
+                shop_name, 
+                category,
+                ST_Y(geom) as lat, 
+                ST_X(geom) as lon
+            FROM shops
+            WHERE 
+                ST_Y(geom) BETWEEN $1 AND $2 AND
+                ST_X(geom) BETWEEN $3 AND $4
+            LIMIT 100
+        """
+        
+        shops = await conn.fetch(shops_query, s, n, w, e)
+        await conn.close()
+        
+        # Converti in formato risposta
+        result = []
+        for shop in shops:
+            result.append({
+                "id": shop["shop_id"],
+                "shop_name": shop["shop_name"],
+                "category": shop["category"],
+                "lat": shop["lat"],
+                "lon": shop["lon"]
+            })
+            
+        return result
+        
+    except Exception as e:
+        logger.error(f"Errore recupero negozi nell'area specificata: {e}")
         raise HTTPException(status_code=500, detail=f"Errore interno: {str(e)}")
 
 # ─── API protetta: statistiche utente ───────────────────────────
