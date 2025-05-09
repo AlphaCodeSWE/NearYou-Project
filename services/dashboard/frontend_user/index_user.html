@@ -17,6 +17,8 @@
       --panel-shadow: 0 2px 10px rgba(0,0,0,0.1);
       --border-color: #eaeaea;
       --success-color: #2ecc71;
+      --item-text-color: #333;
+      --input-bg: #fff;
     }
 
     .dark-theme {
@@ -29,6 +31,8 @@
       --panel-shadow: 0 2px 10px rgba(0,0,0,0.3);
       --border-color: #444;
       --success-color: #21ba45;
+      --item-text-color: #f0f0f0;
+      --input-bg: #333;
     }
 
     * {
@@ -179,6 +183,7 @@
       background: var(--bg-color);
       border-radius: 6px;
       text-align: center;
+      color: var(--item-text-color);
     }
 
     .stat-value {
@@ -189,7 +194,7 @@
 
     .stat-label {
       font-size: 12px;
-      color: var(--text-color);
+      color: var(--item-text-color);
       opacity: 0.8;
     }
 
@@ -209,6 +214,7 @@
       border-radius: 6px;
       background: var(--bg-color);
       align-items: flex-start;
+      color: var(--item-text-color);
     }
 
     .notification-icon {
@@ -239,7 +245,7 @@
 
     .notification-time {
       font-size: 12px;
-      color: var(--text-color);
+      color: var(--item-text-color);
       opacity: 0.6;
       margin-top: 4px;
     }
@@ -309,6 +315,7 @@
       border: 1px solid var(--border-color);
       cursor: pointer;
       white-space: nowrap;
+      color: var(--item-text-color);
     }
 
     .category-pill.active {
@@ -354,7 +361,7 @@
       font-size: 16px;
       border: 1px solid var(--border-color);
       border-radius: 4px;
-      background: var(--panel-bg);
+      background: var(--input-bg);
       color: var(--text-color);
     }
 
@@ -399,6 +406,7 @@
 
     .custom-popup .popup-content {
       padding: 15px;
+      color: var(--item-text-color);
     }
 
     .custom-popup .popup-message {
@@ -407,6 +415,7 @@
       background: var(--bg-color);
       border-radius: 6px;
       border-left: 3px solid var(--accent-color);
+      color: var(--item-text-color);
     }
 
     /* Mobile responsive */
@@ -737,25 +746,8 @@
       sessionStorage.removeItem("nearYouToken");
       sessionStorage.removeItem("nearYouUsername");
       
-      // Update UI
-      containerEl.style.display = "none";
-      loginCard.style.display = "block";
-      document.getElementById("pass").value = "";
-      
-      // Reset stats
-      document.getElementById("total-distance").textContent = "0";
-      document.getElementById("shops-nearby").textContent = "0";
-      document.getElementById("total-notifications").textContent = "0";
-      document.getElementById("active-time").textContent = "0";
-      
-      // Reset profile
-      document.getElementById("user-id").textContent = "ID: --";
-      document.getElementById("user-age").textContent = "Età: --";
-      document.getElementById("user-job").textContent = "Professione: --";
-      document.getElementById("user-interests").textContent = "Interessi: --";
-      
-      // Clear notifications
-      document.getElementById("notifications-container").innerHTML = "";
+      // Refresh the page
+      window.location.reload();
     }
     
     function toggleTheme() {

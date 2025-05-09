@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from clickhouse_driver import Client
@@ -117,7 +117,13 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     token = create_access_token({"user_id": user["user_id"]})
     return {"access_token": token, "token_type": "bearer"}
 
-# ─── Servi la pagina di login + mappa ────────────────────────────
+# ─── Reindirizza dalla radice alla dashboard utente ──────────────────────────
+@app.get("/", response_class=RedirectResponse)
+async def root():
+    """Reindirizza dalla radice del sito alla dashboard utente."""
+    return RedirectResponse(url="/dashboard/user")
+
+# ─── Dashboard utente principale ────────────────────────
 @app.get("/dashboard/user", response_class=HTMLResponse)
 async def user_dashboard():
     """Endpoint che serve la dashboard utente."""
