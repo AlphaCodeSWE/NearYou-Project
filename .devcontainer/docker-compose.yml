@@ -50,9 +50,8 @@ services:
     volumes:
       - ../certs:/bitnami/kafka/config/certs
       - ../client_config:/opt/client_config:ro
-      - kafka_data:/bitnami/kafka
-      - ./scripts/kafka_entrypoint.sh:/opt/custom/kafka_entrypoint.sh:ro
-    entrypoint: ["/bin/bash", "/opt/custom/kafka_entrypoint.sh"]
+      #- kafka_data:/bitnami/kafka
+    
     environment:
       - KAFKA_ENABLE_KRAFT=false
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
@@ -419,7 +418,7 @@ services:
 
 
 volumes:
-  kafka_data:
+  #kafka_data:
   clickhouse_data:
   postgres_data:
   airflow_pgdata:
